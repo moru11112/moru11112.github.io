@@ -81,6 +81,21 @@ a{color:inherit}
 .watch{display:block;text-align:center;text-decoration:none;background:var(--btn);color:var(--btn-fg);font-family:var(--f-mono);font-weight:500;font-size:13px;padding:9px 12px}
 .watch:hover{opacity:.86}
 
+/* before / after */
+.cmps{display:flex;flex-direction:column;gap:12px;padding:12px}
+.cmp-item{border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:10px}
+.cmp{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:6px;overflow:hidden;--pos:50%;user-select:none;touch-action:pan-y;background:var(--ph-b)}
+.cmp .layer{position:absolute;inset:0}
+.cmp .layer img,.cmp .layer canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.cmp .before{clip-path:inset(0 calc(100% - var(--pos)) 0 0)}
+.cmp .bar{position:absolute;top:0;bottom:0;left:var(--pos);width:2px;margin-left:-1px;background:#fff;pointer-events:none}
+.cmp .bar::after{content:"‹ ›";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:#fff;color:#141414;display:grid;place-items:center;font-size:14px;font-weight:700;letter-spacing:2px}
+.cmp input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize}
+.cmp:has(input:focus-visible) .bar::after{outline:2px solid #fff;outline-offset:3px}
+.cmp .lb{position:absolute;top:8px;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;color:#fff;background:rgba(0,0,0,.55);padding:3px 7px;pointer-events:none}
+.cmp .lb.l{left:8px}.cmp .lb.r{right:8px}
+.cmp-item h3{margin:0;font-family:var(--f-mono);font-size:13.5px;font-weight:500}
+
 /* tools */
 .tools{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;list-style:none;margin:0;padding:18px 16px}
 .tools li{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;padding:6px 12px 6px 6px;border:1px solid var(--line);border-radius:999px}
@@ -129,6 +144,11 @@ footer{text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--mu
   </section>
 
   <section class="block">
+    <div class="block-head"><h2>Before / After</h2><p>Kéo thanh trượt để so sánh</p></div>
+    <div class="cmps" id="cmps"></div>
+  </section>
+
+  <section class="block">
     <div class="block-head"><h2>Phần mềm</h2><p>Công cụ mình dùng</p></div>
     <ul class="tools" id="tools"></ul>
   </section>
@@ -168,6 +188,12 @@ const PROJECTS = [
   {title:"Thành Phố Ngủ Quên | VFX",      image:"", link:""}
 ];
 
+// Before / After: before là ảnh gốc, after là ảnh sau khi làm VFX (cùng khung hình, cùng tỉ lệ 16:9)
+const BEFORE_AFTER = [
+  {title:"Thay nền phông xanh", before:"", after:""},
+  {title:"Thay bầu trời",       before:"", after:""}
+];
+
 // Phần mềm
 const TOOLS = [
   ["Ae","After Effects"],
@@ -198,6 +224,79 @@ document.getElementById('projects').innerHTML = PROJECTS.map(p => `
   </article>`).join('');
 
 document.getElementById('tools').innerHTML = TOOLS.map(([c,n]) => `<li><b>${esc(c)}</b>${esc(n)}</li>`).join('');
+
+/* ---- before / after ---- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function person(ctx,W,H,fill){
+  const cx=W*0.5, h=H*0.06, y=H*0.42;
+  ctx.fillStyle=fill; ctx.beginPath(); ctx.arc(cx,y,h,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(cx-h*0.55,y+h*0.9); ctx.lineTo(cx+h*0.55,y+h*0.9);
+  ctx.quadraticCurveTo(cx+h*2.6,y+h*1.4,cx+h*2.7,y+h*3.2); ctx.lineTo(cx+h*2.9,H); ctx.lineTo(cx-h*2.9,H);
+  ctx.lineTo(cx-h*2.7,y+h*3.2); ctx.quadraticCurveTo(cx-h*2.6,y+h*1.4,cx-h*0.55,y+h*0.9); ctx.closePath(); ctx.fill();
+}
+function drawBefore(c,v){
+  const ctx=c.getContext('2d'),W=c.width,H=c.height;
+  if(v===1){ // sky plate: flat grey overcast
+    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#B9BCC0'); g.addColorStop(0.7,'#9EA2A6'); g.addColorStop(1,'#55585C');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#3E4144'; ctx.beginPath(); ctx.moveTo(0,H*0.75);
+    for(let x=0;x<=W;x+=W/12) ctx.lineTo(x,H*(0.62+Math.sin(x/W*7)*0.05)); ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.fill();
+    return;
+  }
+  const g=ctx.createRadialGradient(W*0.5,H*0.4,H*0.1,W*0.5,H*0.5,W*0.75);
+  g.addColorStop(0,'#4FC46A'); g.addColorStop(1,'#1F6E33'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#F4F4F0'; ctx.lineWidth=Math.max(2,W/300); const r=mulberry32(5);
+  for(let i=0;i<9;i++){const x=W*(0.08+r()*0.84),y=H*(0.08+r()*0.6),s=W/90; if(Math.abs(x-W*0.5)<W*0.12&&y>H*0.3)continue;
+    ctx.beginPath(); ctx.moveTo(x-s,y-s); ctx.lineTo(x+s,y+s); ctx.moveTo(x+s,y-s); ctx.lineTo(x-s,y+s); ctx.stroke();}
+  person(ctx,W,H,'#1B1F22');
+}
+function drawAfter(c,v){
+  const ctx=c.getContext('2d'),W=c.width,H=c.height;
+  const sky=ctx.createLinearGradient(0,0,0,H*0.72);
+  sky.addColorStop(0,'#0E1A33'); sky.addColorStop(0.55,'#4A3A5C'); sky.addColorStop(1,'#E89A4A');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+  const sun=ctx.createRadialGradient(W*0.3,H*0.62,0,W*0.3,H*0.62,H*0.35);
+  sun.addColorStop(0,'rgba(255,214,150,.95)'); sun.addColorStop(0.15,'rgba(255,180,90,.6)'); sun.addColorStop(1,'rgba(255,150,60,0)');
+  ctx.fillStyle=sun; ctx.fillRect(0,0,W,H);
+  if(v===1){
+    ctx.fillStyle='#1C1820'; ctx.beginPath(); ctx.moveTo(0,H*0.75);
+    for(let x=0;x<=W;x+=W/12) ctx.lineTo(x,H*(0.62+Math.sin(x/W*7)*0.05)); ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.fill();
+    return;
+  }
+  const r=mulberry32(21);
+  for(const [col,base,maxh] of [['#3A2E45',0.7,0.16],['#241E30',0.74,0.22],['#14121C',0.8,0.3]]){
+    ctx.fillStyle=col; let x=0;
+    while(x<W){const w=W*(0.02+r()*0.05),h=H*(0.04+r()*maxh); ctx.fillRect(x,H*base-h,w,h+H); x+=w+W*0.003;}
+  }
+  ctx.fillStyle='#0B0B10'; ctx.fillRect(0,H*0.8,W,H*0.2);
+  ctx.save(); ctx.shadowColor='rgba(255,170,80,.9)'; ctx.shadowBlur=H*0.03; person(ctx,W,H,'#120F14'); ctx.restore();
+  person(ctx,W,H,'#120F14');
+}
+const layer = (src,alt) => src ? `<img src="${esc(src)}" alt="${esc(alt)}">` : `<canvas></canvas>`;
+document.getElementById('cmps').innerHTML = BEFORE_AFTER.map((b,i) => `
+  <div class="cmp-item">
+    <div class="cmp" data-i="${i}">
+      <div class="layer after">${layer(b.after,'Sau: '+b.title)}</div>
+      <div class="layer before">${layer(b.before,'Trước: '+b.title)}</div>
+      <div class="bar" aria-hidden="true"></div>
+      <span class="lb l">TRƯỚC</span><span class="lb r">SAU</span>
+      <input type="range" id="cmp${i}" min="0" max="100" value="50" aria-label="So sánh trước và sau: ${esc(b.title)}">
+    </div>
+    <h3>${esc(b.title)}</h3>
+  </div>`).join('');
+function paintCmps(){
+  document.querySelectorAll('.cmp').forEach(el => {
+    const v = +el.dataset.i % 2;
+    const cb = el.querySelector('.before canvas'), ca = el.querySelector('.after canvas');
+    for (const [c,fn] of [[cb,drawBefore],[ca,drawAfter]]) if (c){
+      const r=c.getBoundingClientRect(), d=Math.min(devicePixelRatio||1,2);
+      c.width=Math.max(1,Math.round(r.width*d)); c.height=Math.max(1,Math.round(r.height*d)); fn(c,v);
+    }
+  });
+}
+paintCmps();
+let rsz; addEventListener('resize',()=>{clearTimeout(rsz); rsz=setTimeout(paintCmps,150);});
+document.querySelectorAll('.cmp input').forEach(inp => inp.addEventListener('input', () => inp.parentElement.style.setProperty('--pos', inp.value+'%')));
 
 const reels = document.getElementById('reels');
 const step = () => (reels.firstElementChild?.getBoundingClientRect().width || 140) + 14;
