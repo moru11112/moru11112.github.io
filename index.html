@@ -75,11 +75,16 @@ a{color:inherit}
 .projects{display:flex;flex-direction:column;gap:12px;padding:12px}
 .project{border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:12px}
 .shot{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:6px;overflow:hidden;background:linear-gradient(160deg,var(--ph-a),var(--ph-b))}
-.shot img,.shot video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.shot .ph-label{top:50%}
+.shot img,.shot video,.shot iframe{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0}
+.shot .ph-label{top:72%}
+.shot-btn{position:absolute;inset:0;width:100%;height:100%;border:0;padding:0;margin:0;background:none;cursor:pointer;display:grid;place-items:center}
+.shot-btn img{transition:transform .5s ease}
+.shot-btn:hover img{transform:scale(1.03)}
+.play{position:relative;z-index:1;width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;box-shadow:0 4px 18px rgba(0,0,0,.35);transition:transform .2s ease}
+.play svg{width:18px;height:18px;margin-left:3px;fill:#141414}
+.shot-btn:hover .play{transform:scale(1.08)}
+@media (prefers-reduced-motion:reduce){.shot-btn img,.play{transition:none}}
 .project h3{margin:0;font-family:var(--f-mono);font-size:13.5px;font-weight:500}
-.watch{display:block;text-align:center;text-decoration:none;background:var(--btn);color:var(--btn-fg);font-family:var(--f-mono);font-weight:500;font-size:13px;padding:9px 12px}
-.watch:hover{opacity:.86}
 
 /* before / after */
 .cmps{display:flex;flex-direction:column;gap:12px;padding:12px}
@@ -180,12 +185,15 @@ const REELS = [
   {title:"Set extension",video:""}
 ];
 
-// Dự án: image là ảnh thumbnail, link là link YouTube/Vimeo/Drive của clip
+// Dự án: bấm vào khung là clip phát ngay trên trang.
+//   youtube: dán nguyên link YouTube (ảnh bìa tự lấy từ YouTube)
+//   video:   hoặc tên file .mp4 tải lên GitHub (thay cho YouTube)
+//   image:   ảnh bìa riêng nếu muốn (không bắt buộc)
 const PROJECTS = [
-  {title:"Mưa Sao Băng | MV",            image:"", link:""},
-  {title:"Ngã Ba Đèn Đỏ | Phim ngắn",     image:"", link:""},
-  {title:"Hơi Thở Mới | Quảng cáo",       image:"", link:""},
-  {title:"Thành Phố Ngủ Quên | VFX",      image:"", link:""}
+  {title:"Mưa Sao Băng | MV",            youtube:"", video:"", image:""},
+  {title:"Ngã Ba Đèn Đỏ | Phim ngắn",     youtube:"", video:"", image:""},
+  {title:"Hơi Thở Mới | Quảng cáo",       youtube:"", video:"", image:""},
+  {title:"Thành Phố Ngủ Quên | VFX",      youtube:"", video:"", image:""}
 ];
 
 // Before / After: before là ảnh gốc, after là ảnh sau khi làm VFX (cùng khung hình, cùng tỉ lệ 16:9)
@@ -216,12 +224,34 @@ if (AVATAR) document.getElementById('avatar').innerHTML = `<img src="${esc(AVATA
 document.getElementById('reels').innerHTML = REELS.map(r =>
   `<div class="reel">${r.video ? vid(r.video) : ''}<span>${esc(r.title)}</span></div>`).join('');
 
-document.getElementById('projects').innerHTML = PROJECTS.map(p => `
+const ytId = s => { if (!s) return ''; const m = String(s).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/)([\w-]{11})/); return m ? m[1] : (/^[\w-]{11}$/.test(s) ? s : ''); };
+const PLAY = `<span class="play" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M3 1.5v17l15-8.5z"/></svg></span>`;
+document.getElementById('projects').innerHTML = PROJECTS.map((p,i) => {
+  const id = ytId(p.youtube);
+  const cover = p.image || (id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : '');
+  return `
   <article class="project">
-    <div class="shot">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.title)}">` : `<span class="ph-label">Thumbnail</span>`}</div>
+    <div class="shot" id="shot${i}">
+      <button class="shot-btn" type="button" data-i="${i}" aria-label="Phát clip ${esc(p.title)}">
+        ${cover ? `<img src="${esc(cover)}" alt="">` : ''}
+        ${PLAY}
+        ${cover ? '' : `<span class="ph-label">${id || p.video ? 'Bấm để xem' : 'Chưa có clip'}</span>`}
+      </button>
+    </div>
     <h3>${esc(p.title)}</h3>
-    <a class="watch" href="${p.link ? esc(p.link) : '#'}" ${p.link ? 'target="_blank" rel="noopener"' : ''}>Xem ngay</a>
-  </article>`).join('');
+  </article>`;
+}).join('');
+document.getElementById('projects').addEventListener('click', e => {
+  const btn = e.target.closest('.shot-btn'); if (!btn) return;
+  const p = PROJECTS[+btn.dataset.i], id = ytId(p.youtube), shot = btn.parentElement;
+  if (id) {
+    shot.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1" title="${esc(p.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+  } else if (p.video) {
+    shot.innerHTML = `<video src="${esc(p.video)}" controls autoplay playsinline></video>`;
+  } else {
+    const lb = btn.querySelector('.ph-label'); if (lb) lb.textContent = 'Clip sẽ được thêm sau';
+  }
+});
 
 document.getElementById('tools').innerHTML = TOOLS.map(([c,n]) => `<li><b>${esc(c)}</b>${esc(n)}</li>`).join('');
 
