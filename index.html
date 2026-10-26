@@ -4,312 +4,488 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Moru</title>
+<meta name="description" content="Moru · VFX Editor | 3D Artist. Compositing, 3D character, MV và quảng cáo.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Moru · VFX Editor | 3D Artist">
+<meta property="og:description" content="Compositing, 3D character, MV và quảng cáo.">
+<meta property="og:image" content="https://moru11112.github.io/og.jpg">
+<meta property="og:url" content="https://moru11112.github.io/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: one narrow centered column like a link-in-bio page. Cover video, profile, vertical reels strip, project cards, tools, contact. */
+/* Layout: dark cinematic single page. Full-bleed cover with the profile laid over its foot, then
+   reels strip, a featured project + 3-up grid, 3D viewer with info panel, before/after pair, tools, contact. */
 :root{
-  --bg:#FAFAF8;
-  --card:#FFFFFF;
-  --fg:#141414;
-  --muted:#6E6E6A;
-  --line:#E4E3DF;
-  --btn:#141414;
-  --btn-fg:#FAFAF8;
-  --ph-a:#2A2B2D; --ph-b:#0E0F10;   /* placeholder frames stay dark in both themes */
+  --bg:#0B0B0C;
+  --bg2:#111113;
+  --card:#151517;
+  --line:#26262A;
+  --fg:#EEEDEA;
+  --muted:#8E8D89;
+  --accent:#F0703C;          /* taken from the orange of the avatar's eyes */
+  --accent-ink:#170A04;
+  --ph-a:#2A2B2D; --ph-b:#0E0F10;
   --f-sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --f-mono:"DM Mono",ui-monospace,Menlo,Consolas,monospace;
+  --radius:10px;
+  color-scheme:dark;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0F0F10;--card:#161617;--fg:#EDEDEA;--muted:#8F8F8A;--line:#28282A;--btn:#EDEDEA;--btn-fg:#121212;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0F0F10;--card:#161617;--fg:#EDEDEA;--muted:#8F8F8A;--line:#28282A;--btn:#EDEDEA;--btn-fg:#121212;color-scheme:dark}
 *{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
 a{color:inherit}
-:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .mono{font-family:var(--f-mono)}
-.col{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 
-/* cover */
-.cover{position:relative;height:clamp(200px,38vw,440px);overflow:hidden;background:var(--ph-b)}
-.cover video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.ph{position:absolute;inset:0;background:
-   radial-gradient(60% 80% at 30% 40%,#4A4C50 0,transparent 60%),
-   radial-gradient(50% 70% at 75% 65%,#35373A 0,transparent 60%),
-   linear-gradient(160deg,var(--ph-a),var(--ph-b));
-   background-size:140% 140%;animation:drift 18s ease-in-out infinite alternate}
-@keyframes drift{from{background-position:0% 0%}to{background-position:100% 100%}}
-@media (prefers-reduced-motion:reduce){.ph{animation:none}}
-.ph-label{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;color:#D9D9D5;background:rgba(0,0,0,.45);padding:5px 10px;white-space:nowrap;text-transform:uppercase}
+/* film grain */
+.grain{position:fixed;inset:-50%;z-index:40;pointer-events:none;opacity:.07;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain 1s steps(4) infinite}
+@keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-1%)}100%{transform:translate(0,0)}}
+@media (prefers-reduced-motion:reduce){.grain{animation:none}}
 
-/* profile */
-.profile{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;margin-top:-52px;position:relative}
-.avatar{width:104px;height:104px;border-radius:50%;border:4px solid var(--bg);background:linear-gradient(150deg,#3A3B3E,#121314);display:grid;place-items:center;overflow:hidden;color:#EDEDEA;font-family:var(--f-mono);font-size:22px;letter-spacing:.06em}
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:20px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.brand img{width:30px;height:30px;border-radius:50%;object-fit:cover;border:1.5px solid var(--accent)}
+.nav{display:flex;gap:22px;margin-left:auto}
+.nav a{text-decoration:none;color:var(--muted);font-size:14px}
+.nav a:hover{color:var(--fg)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;text-decoration:none;border:1px solid var(--line);background:none;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--fg)}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.accent:hover{filter:brightness(1.08)}
+.btn svg{width:12px;height:12px;fill:currentColor}
+.top .btn{padding:8px 14px}
+@media (max-width:820px){.nav{display:none}.top .btn{margin-left:auto}}
+
+/* hero */
+.hero{position:relative}
+.cover{position:relative;height:clamp(300px,52vw,600px);overflow:hidden;background:var(--ph-b)}
+.cover video,.cover .cover-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cover .cover-img{filter:blur(36px) saturate(1.1) brightness(.55);transform:scale(1.2)}
+.cover::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,11,12,.15) 0%,rgba(11,11,12,0) 35%,rgba(11,11,12,.75) 80%,var(--bg) 100%)}
+.cover-note{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:16px;z-index:1;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#CFCFCB;background:rgba(0,0,0,.45);padding:4px 9px}
+.hero-info{position:relative;z-index:2;margin-top:-150px;display:flex;align-items:flex-end;gap:28px;flex-wrap:wrap}
+.avatar{width:132px;height:132px;border-radius:50%;flex:none;overflow:hidden;border:3px solid var(--accent);box-shadow:0 0 0 6px var(--bg);background:linear-gradient(150deg,#3A3B3E,#121314)}
 .avatar img{width:100%;height:100%;object-fit:cover}
-.name{font-size:28px;font-weight:700;letter-spacing:-.01em;margin:8px 0 0}
-.role{font-family:var(--f-mono);color:var(--fg);font-size:14px;margin:0}
-.tag{font-family:var(--f-mono);color:var(--muted);font-size:14px;margin:10px 0 0}
-.socials{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;list-style:none;margin:14px 0 0;padding:0}
-.socials a{display:inline-block;font-family:var(--f-mono);font-size:13px;text-decoration:none;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card)}
+.who{flex:1 1 300px;min-width:0}
+.name{margin:0;font-size:clamp(44px,8vw,84px);font-weight:700;letter-spacing:-.03em;line-height:1}
+.role{margin:10px 0 0;font-family:var(--f-mono);color:var(--accent);font-size:15px}
+.tag{margin:6px 0 0;font-family:var(--f-mono);color:var(--muted);font-size:13px}
+.hero-act{display:flex;flex-direction:column;align-items:flex-end;gap:14px}
+.cta{display:flex;flex-wrap:wrap;gap:10px}
+.socials{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0;padding:0}
+.socials a{display:inline-block;font-family:var(--f-mono);font-size:12.5px;text-decoration:none;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:rgba(21,21,23,.7)}
 .socials a:hover{border-color:var(--fg)}
+@media (max-width:720px){
+  .hero-info{margin-top:-80px;flex-direction:column;align-items:center;text-align:center;gap:14px}
+  .avatar{width:112px;height:112px}
+  .who{flex:none}
+  .hero-act{align-items:center}
+  .cta,.socials{justify-content:center}
+}
 
-/* reels strip */
-.reels-wrap{max-width:760px;margin:36px auto 0;position:relative;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+/* sections */
+.sec{padding-block:72px 0}
+.sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:22px}
+.sec-head h2{margin:0;font-size:clamp(26px,3.6vw,36px);font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.sec-head p{margin:4px 0 0;color:var(--muted);font-family:var(--f-mono);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font-family:var(--f-mono);font-size:12.5px;padding:6px 12px;border:1px solid var(--line);background:none;border-radius:999px;cursor:pointer;color:var(--muted)}
+.chips button:hover{color:var(--fg);border-color:var(--fg)}
+.chips button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+/* reels */
+.reels-wrap{position:relative}
 .reels{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}
 .reels::-webkit-scrollbar{display:none}
-.reel{flex:0 0 clamp(120px,30vw,150px);aspect-ratio:9/16;position:relative;overflow:hidden;scroll-snap-align:start;background:linear-gradient(170deg,var(--ph-a),var(--ph-b));border-radius:4px}
-.reel video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.reel span{position:absolute;left:8px;bottom:8px;font-family:var(--f-mono);font-size:11px;color:#E5E5E1;background:rgba(0,0,0,.5);padding:2px 6px}
+.reel{flex:0 0 clamp(140px,19vw,200px);aspect-ratio:9/16;position:relative;overflow:hidden;scroll-snap-align:start;border-radius:var(--radius);border:0;padding:0;cursor:pointer;background:linear-gradient(170deg,var(--ph-a),var(--ph-b))}
 .reel:nth-child(3n+2){background:linear-gradient(190deg,#3B3D41,#101112)}
 .reel:nth-child(3n){background:linear-gradient(150deg,#1D1E20,#46484C)}
-.nav-btn{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;border:0;background:rgba(20,20,20,.65);color:#fff;font-size:18px;cursor:pointer;display:grid;place-items:center;z-index:2}
-.nav-btn.prev{left:max(4px,env(safe-area-inset-left,0px))}.nav-btn.next{right:max(4px,env(safe-area-inset-right,0px))}
-@media (hover:none){.nav-btn{display:none}}
+.reel video,.reel img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+.reel:hover video,.reel:hover img{transform:scale(1.04)}
+.reel .cap{position:absolute;left:0;right:0;bottom:0;padding:24px 10px 10px;text-align:left;font-family:var(--f-mono);font-size:12px;color:#ECECE8;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+.nav-btn{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:rgba(11,11,12,.8);color:var(--fg);font-size:20px;cursor:pointer;display:grid;place-items:center;z-index:2}
+.nav-btn.prev{left:-8px}.nav-btn.next{right:-8px}
+@media (hover:none),(max-width:720px){.nav-btn{display:none}}
 
-/* blocks */
-.block{margin-top:40px;border:1px solid var(--line);background:var(--card)}
-.block-head{text-align:center;padding:14px 16px;border-bottom:1px solid var(--line)}
-.block-head h2{margin:0;font-size:15px;font-weight:700;font-family:var(--f-mono);letter-spacing:.02em}
-.block-head p{margin:2px 0 0;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
-.projects{display:flex;flex-direction:column;gap:12px;padding:12px}
-.project{border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:12px}
-.shot{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:6px;overflow:hidden;background:linear-gradient(160deg,var(--ph-a),var(--ph-b))}
-.shot img,.shot video,.shot iframe{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0}
-.shot .ph-label{top:72%}
+/* projects */
+.projects{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:28px 22px}
+.project{grid-column:span 2;display:flex;flex-direction:column;gap:12px;min-width:0}
+.project.feat{grid-column:1/-1}
+@media (max-width:900px){.project{grid-column:span 3}}
+@media (max-width:600px){.projects{grid-template-columns:1fr}.project,.project.feat{grid-column:auto}}
+.shot{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:var(--radius);overflow:hidden;background:linear-gradient(160deg,var(--ph-a),var(--ph-b))}
+.feat .shot{aspect-ratio:21/9}
+@media (max-width:600px){.feat .shot{aspect-ratio:16/9}}
 .shot-btn{position:absolute;inset:0;width:100%;height:100%;border:0;padding:0;margin:0;background:none;cursor:pointer;display:grid;place-items:center}
-.shot-btn img{transition:transform .5s ease}
-.shot-btn:hover img{transform:scale(1.03)}
-.play{position:relative;z-index:1;width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;box-shadow:0 4px 18px rgba(0,0,0,.35);transition:transform .2s ease}
+.shot-btn img,.shot-btn video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s ease}
+.shot-btn:hover img,.shot-btn:hover video{transform:scale(1.04)}
+.shot-btn::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 55%,rgba(0,0,0,.45))}
+.play{position:relative;z-index:1;width:58px;height:58px;border-radius:50%;background:rgba(238,237,234,.94);display:grid;place-items:center;box-shadow:0 6px 24px rgba(0,0,0,.4);transition:transform .2s ease,background .2s ease}
 .play svg{width:18px;height:18px;margin-left:3px;fill:#141414}
-.shot-btn:hover .play{transform:scale(1.08)}
-@media (prefers-reduced-motion:reduce){.shot-btn img,.play{transition:none}}
-.project h3{margin:0;font-family:var(--f-mono);font-size:13.5px;font-weight:500}
+.feat .play{width:72px;height:72px}
+.shot-btn:hover .play{transform:scale(1.08);background:var(--accent)}
+.ph-label{position:absolute;left:50%;top:70%;transform:translateX(-50%);z-index:1;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;color:#D9D9D5;background:rgba(0,0,0,.45);padding:4px 9px;white-space:nowrap;text-transform:uppercase}
+.p-title{margin:0;font-size:17px;font-weight:600;letter-spacing:-.01em}
+.feat .p-title{font-size:clamp(20px,2.4vw,26px)}
+.p-meta{margin:2px 0 0;font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.p-meta b{color:var(--accent);font-weight:500}
+
+/* 3D */
+.char{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:860px){.char{grid-template-columns:1fr}}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.stage{position:relative;aspect-ratio:4/5;max-width:100%;border-radius:var(--radius);overflow:hidden;background:radial-gradient(80% 60% at 50% 35%,#36383C,#0F1012 75%)}
+.stage model-viewer{position:absolute;inset:0;width:100%;height:100%;background:transparent;--poster-color:transparent;--progress-bar-color:var(--accent)}
+.stage .tag-l{position:absolute;left:10px;top:10px;font-family:var(--f-mono);font-size:11px;color:#E5E5E1;background:rgba(0,0,0,.5);padding:3px 8px;pointer-events:none;letter-spacing:.04em;border-radius:4px}
+.stage .hint{position:absolute;left:10px;bottom:10px;font-family:var(--f-mono);font-size:11px;color:#E5E5E1;background:rgba(0,0,0,.5);padding:3px 8px;pointer-events:none;border-radius:4px}
+.stage .empty{position:absolute;inset:0;display:grid;place-items:center}
+.stage .empty svg{width:42%;opacity:.35}
+.info{border:1px solid var(--line);background:var(--card);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.info h3{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.info p{margin:0;color:#C4C3BF;font-size:14px}
+.info .lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.info .credit{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+.seg button{font-family:var(--f-mono);font-size:12.5px;padding:6px 14px;border:0;background:none;border-radius:999px;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
 
 /* before / after */
-.cmps{display:flex;flex-direction:column;gap:12px;padding:12px}
-.cmp-item{border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:10px}
-.cmp{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:6px;overflow:hidden;--pos:50%;user-select:none;touch-action:pan-y;background:var(--ph-b)}
+.cmps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+@media (max-width:720px){.cmps{grid-template-columns:1fr}}
+.cmp-item{display:flex;flex-direction:column;gap:10px;min-width:0}
+.cmp{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:var(--radius);overflow:hidden;--pos:50%;user-select:none;touch-action:pan-y;background:var(--ph-b)}
 .cmp .layer{position:absolute;inset:0}
 .cmp .layer img,.cmp .layer canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .cmp .before{clip-path:inset(0 calc(100% - var(--pos)) 0 0)}
 .cmp .bar{position:absolute;top:0;bottom:0;left:var(--pos);width:2px;margin-left:-1px;background:#fff;pointer-events:none}
-.cmp .bar::after{content:"‹ ›";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:#fff;color:#141414;display:grid;place-items:center;font-size:14px;font-weight:700;letter-spacing:2px}
+.cmp .bar::after{content:"‹ ›";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:#fff;color:#141414;display:grid;place-items:center;font-size:14px;font-weight:700;letter-spacing:2px}
 .cmp input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize}
-.cmp:has(input:focus-visible) .bar::after{outline:2px solid #fff;outline-offset:3px}
-.cmp .lb{position:absolute;top:8px;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;color:#fff;background:rgba(0,0,0,.55);padding:3px 7px;pointer-events:none}
-.cmp .lb.l{left:8px}.cmp .lb.r{right:8px}
-.cmp-item h3{margin:0;font-family:var(--f-mono);font-size:13.5px;font-weight:500}
-
-/* 3D characters */
-.chars{display:flex;flex-direction:column;gap:12px;padding:12px}
-.char{border:1px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:10px;min-width:0}
-.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.stage{position:relative;aspect-ratio:3/4;max-width:100%;border-radius:6px;overflow:hidden;background:radial-gradient(80% 60% at 50% 35%,#3A3C40,#111214 75%)}
-.stage model-viewer{position:absolute;inset:0;width:100%;height:100%;background:transparent;--poster-color:transparent;--progress-bar-color:#EDEDEA}
-.stage img,.stage iframe,.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0}
-.stage .tag-l{position:absolute;left:8px;top:8px;font-family:var(--f-mono);font-size:11px;color:#E5E5E1;background:rgba(0,0,0,.5);padding:2px 7px;pointer-events:none;letter-spacing:.04em}
-.stage .hint{position:absolute;left:8px;bottom:8px;font-family:var(--f-mono);font-size:11px;color:#E5E5E1;background:rgba(0,0,0,.5);padding:2px 7px;pointer-events:none}
-.stage .empty{position:absolute;inset:0;display:grid;place-items:center}
-.stage .empty svg{width:42%;opacity:.35}
-.angles{display:flex;flex-wrap:wrap;gap:6px}
-.angles button{font-family:var(--f-mono);font-size:12px;padding:6px 10px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer;border-radius:999px}
-.angles button:hover{border-color:var(--fg)}
-.angles button[aria-pressed="true"]{background:var(--btn);color:var(--btn-fg);border-color:var(--btn)}
-.char h3{margin:0;font-family:var(--f-mono);font-size:13.5px;font-weight:500}
-.char p{margin:0;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.cmp:has(input:focus-visible) .bar::after{outline:2px solid var(--accent);outline-offset:3px}
+.cmp .lb{position:absolute;top:10px;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;color:#fff;background:rgba(0,0,0,.55);padding:3px 8px;pointer-events:none;border-radius:4px}
+.cmp .lb.l{left:10px}.cmp .lb.r{right:10px}
+.cmp-item h3{margin:0;font-size:15px;font-weight:600}
 
 /* tools */
-.tools{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;list-style:none;margin:0;padding:18px 16px}
-.tools li{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;padding:6px 12px 6px 6px;border:1px solid var(--line);border-radius:999px}
-.tools b{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--btn);color:var(--btn-fg);font-family:var(--f-mono);font-size:11px;font-weight:500}
+.tools{display:flex;flex-wrap:wrap;gap:10px;list-style:none;margin:0;padding:0}
+.tools li{display:flex;align-items:center;gap:10px;font-size:14.5px;font-weight:500;padding:7px 16px 7px 7px;border:1px solid var(--line);border-radius:999px;background:var(--card)}
+.tools b{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--bg);border:1px solid var(--line);color:var(--accent);font-family:var(--f-mono);font-size:11.5px;font-weight:500}
 
 /* contact */
-.contact{margin-top:40px;padding-block:36px;text-align:center;border-top:1px solid var(--line)}
-.contact h2{margin:0;font-size:clamp(30px,8vw,44px);font-weight:700;letter-spacing:-.02em;line-height:1.15}
-.contact p{margin:6px 0 18px;color:var(--muted);font-family:var(--f-mono);font-size:13px}
-.mail{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px}
-.mail span{font-family:var(--f-mono);font-size:15px;user-select:all;overflow-wrap:anywhere}
-.mail button{font-family:var(--f-mono);font-size:13px;padding:8px 14px;border:0;background:var(--btn);color:var(--btn-fg);cursor:pointer}
-footer{text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-block:20px 32px}
+.contact{margin-top:88px;border-top:1px solid var(--line);padding-block:72px 40px;text-align:center}
+.contact h2{margin:0;font-size:clamp(34px,6vw,64px);font-weight:700;letter-spacing:-.03em;line-height:1.08}
+.contact p{margin:10px 0 26px;color:var(--muted);font-family:var(--f-mono);font-size:13px}
+.mail{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px}
+.mail span{font-family:var(--f-mono);font-size:clamp(15px,2.4vw,20px);user-select:all;overflow-wrap:anywhere;min-width:0}
+.contact .socials{justify-content:center;margin-top:22px}
+footer{text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-block:16px 32px}
+
+/* lightbox */
+.lb{position:fixed;inset:0;z-index:50;background:rgba(5,5,6,.92);backdrop-filter:blur(6px);display:grid;place-items:center;padding:max(56px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.lb-frame{position:relative;width:min(1100px,100%);aspect-ratio:16/9;max-height:100%;background:#000;border-radius:8px;overflow:hidden}
+.lb-frame.tall{width:auto;height:min(82vh,100%);aspect-ratio:9/16}
+.lb-frame iframe,.lb-frame video{position:absolute;inset:0;width:100%;height:100%;border:0}
+.lb-close{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));width:42px;height:42px;border-radius:50%;border:1px solid #3A3A3E;background:#151517;color:#EEEDEA;font-size:22px;cursor:pointer;display:grid;place-items:center}
+
+/* reveal on scroll (content stays visible without JS) */
+.js-reveal .rv{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
+.js-reveal .rv.in{opacity:1;transform:none}
+.hero-info > *{animation:rise .8s ease both}
+.hero-info > *:nth-child(2){animation-delay:.08s}.hero-info > *:nth-child(3){animation-delay:.16s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+@media (prefers-reduced-motion:reduce){.js-reveal .rv{opacity:1;transform:none;transition:none}.hero-info > *{animation:none}.shot-btn img,.reel img,.reel video,.play{transition:none}}
 </style>
 </head>
 <body>
 
-<!-- ẢNH/VIDEO BÌA: đặt đường dẫn video trong biến COVER_VIDEO ở cuối file -->
-<header class="cover" id="cover"></header>
+<div class="grain" aria-hidden="true"></div>
 
-<div class="col">
-  <section class="profile">
-    <div class="avatar" id="avatar">TB</div>
-    <h1 class="name">Moru</h1>
-    <p class="role">VFX Editor | 3D Artist</p>
-    <p class="tag">plate → final</p>
-    <ul class="socials">
-      <li><a href="https://www.instagram.com/moru6.66/" target="_blank" rel="noopener">Instagram</a></li>
-      <li><a href="https://www.youtube.com/@moru6430" target="_blank" rel="noopener">YouTube</a></li>
-      <li><a href="#" target="_blank" rel="noopener">Facebook</a></li>
-      <li><a href="#" target="_blank" rel="noopener">Behance</a></li>
-    </ul>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top"><img id="brandAvatar" alt="" src="avatar.jpg">Moru</a>
+    <nav class="nav" aria-label="Mục lục">
+      <a href="#du-an">Dự án</a>
+      <a href="#3d">3D Character</a>
+      <a href="#before-after">Before / After</a>
+      <a href="#phan-mem">Phần mềm</a>
+    </nav>
+    <a class="btn accent" href="#lien-he">Liên hệ</a>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="cover" id="cover"></div>
+  <div class="wrap hero-info">
+    <div class="avatar" id="avatar"></div>
+    <div class="who">
+      <h1 class="name">Moru</h1>
+      <p class="role">VFX Editor | 3D Artist</p>
+      <p class="tag">Compositing · 3D character · MV · quảng cáo</p>
+    </div>
+    <div class="hero-act">
+      <div class="cta">
+        <button class="btn accent" type="button" id="reelBtn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 1.5v17l15-8.5z"/></svg><span id="reelBtnText">Xem showreel</span></button>
+        <a class="btn" href="#du-an">Xem dự án</a>
+      </div>
+      <ul class="socials" id="socials1"></ul>
+    </div>
+  </div>
+</section>
+
+<main>
+  <section class="sec wrap rv" aria-label="Clip ngắn">
+    <div class="sec-head"><div><h2>Clip ngắn</h2><p>Rê chuột để xem trước · bấm để mở</p></div></div>
+    <div class="reels-wrap">
+      <button class="nav-btn prev" type="button" id="prevBtn" aria-label="Clip trước">‹</button>
+      <div class="reels" id="reels"></div>
+      <button class="nav-btn next" type="button" id="nextBtn" aria-label="Clip tiếp">›</button>
+    </div>
   </section>
-</div>
 
-<div class="reels-wrap">
-  <button class="nav-btn prev" type="button" id="prevBtn" aria-label="Clip trước">‹</button>
-  <div class="reels" id="reels"></div>
-  <button class="nav-btn next" type="button" id="nextBtn" aria-label="Clip tiếp">›</button>
-</div>
-
-<main class="col">
-  <section class="block">
-    <div class="block-head"><h2>Dự án</h2><p>Những dự án gần đây</p></div>
+  <section class="sec wrap" id="du-an">
+    <div class="sec-head rv">
+      <div><h2>Dự án</h2><p>Bấm vào khung để xem clip</p></div>
+      <div class="chips" id="filters" role="group" aria-label="Lọc dự án"></div>
+    </div>
     <div class="projects" id="projects"></div>
   </section>
 
-  <section class="block">
-    <div class="block-head"><h2>3D Character</h2><p>Turntable và xem từng góc</p></div>
-    <div class="chars" id="chars"></div>
+  <section class="sec wrap" id="3d">
+    <div class="sec-head rv"><div><h2>3D Character</h2><p>Turntable và xem từng góc</p></div></div>
+    <div id="chars"></div>
   </section>
 
-  <section class="block">
-    <div class="block-head"><h2>Before / After</h2><p>Kéo thanh trượt để so sánh</p></div>
+  <section class="sec wrap" id="before-after">
+    <div class="sec-head rv"><div><h2>Before / After</h2><p>Kéo thanh trượt để so sánh</p></div></div>
     <div class="cmps" id="cmps"></div>
   </section>
 
-  <section class="block">
-    <div class="block-head"><h2>Phần mềm</h2><p>Công cụ mình dùng</p></div>
+  <section class="sec wrap rv" id="phan-mem">
+    <div class="sec-head"><div><h2>Phần mềm</h2><p>Công cụ mình dùng</p></div></div>
     <ul class="tools" id="tools"></ul>
   </section>
 
-  <section class="contact">
+  <section class="contact wrap rv" id="lien-he">
     <h2>Liên hệ làm việc</h2>
-    <p>MV · quảng cáo · phim ngắn</p>
-    <div class="mail"><span id="mailAddr">tranviethaiedit@gmail.com</span><button type="button" id="copyBtn">Sao chép</button></div>
+    <p>MV · quảng cáo · phim ngắn · 3D character</p>
+    <div class="mail"><span id="mailAddr">tranviethaiedit@gmail.com</span><button class="btn accent" type="button" id="copyBtn">Sao chép email</button></div>
+    <ul class="socials" id="socials2"></ul>
   </section>
 </main>
 
 <footer>© 2026 Moru</footer>
 
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Xem clip" hidden>
+  <button class="lb-close" type="button" id="lbClose" aria-label="Đóng">×</button>
+  <div class="lb-frame" id="lbFrame"></div>
+</div>
+
 <script>
 /* =============== SỬA NỘI DUNG Ở ĐÂY =============== */
 // Video bìa: tải file .mp4 lên GitHub rồi ghi tên file, ví dụ "cover.mp4"
 const COVER_VIDEO = "";
-
-// Ảnh đại diện: ví dụ "avatar.jpg" (để trống thì hiện chữ viết tắt)
 const AVATAR = "avatar.jpg";
 
-// Dải clip dọc (9:16): video là tên file .mp4
+// Showreel: link YouTube. Để trống thì nút sẽ mở dự án đầu tiên có clip.
+const SHOWREEL = "";
+
+const SOCIALS = [
+  ["Instagram","https://www.instagram.com/moru6.66/"],
+  ["YouTube","https://www.youtube.com/@moru6430"],
+  ["Facebook",""],
+  ["Behance",""]
+];
+
+// Clip dọc 9:16: video là file .mp4 (rê chuột sẽ chạy), youtube là link Shorts
 const REELS = [
-  {title:"Breakdown 01", video:""},
-  {title:"Breakdown 02", video:""},
-  {title:"Roto · Key",   video:""},
-  {title:"Sky replace",  video:""},
-  {title:"Clean-up",     video:""},
-  {title:"Set extension",video:""}
+  {title:"Breakdown 01", video:"", youtube:""},
+  {title:"Breakdown 02", video:"", youtube:""},
+  {title:"Roto · Key",   video:"", youtube:""},
+  {title:"Sky replace",  video:"", youtube:""},
+  {title:"Clean-up",     video:"", youtube:""},
+  {title:"Set extension",video:"", youtube:""}
 ];
 
-// Dự án: bấm vào khung là clip phát ngay trên trang.
-//   youtube: dán nguyên link YouTube (ảnh bìa tự lấy từ YouTube)
-//   video:   hoặc tên file .mp4 tải lên GitHub (thay cho YouTube)
-//   image:   ảnh bìa riêng nếu muốn (không bắt buộc)
+// Dự án: dự án đầu tiên hiện to nhất, nên đặt dự án mạnh nhất lên đầu.
+//   type: loại (dùng cho bộ lọc) · role: việc bạn làm · tools: phần mềm
 const PROJECTS = [
-  {title:"Vanilla Sky | Moru ft Tomtp",  youtube:"https://www.youtube.com/watch?v=oL5_Mvc0MYc", video:"", image:""},
-  {title:"Ngã Ba Đèn Đỏ | Phim ngắn",     youtube:"", video:"", image:""},
-  {title:"Hơi Thở Mới | Quảng cáo",       youtube:"", video:"", image:""},
-  {title:"Thành Phố Ngủ Quên | VFX",      youtube:"", video:"", image:""}
+  {title:"Vanilla Sky · Moru ft Tomtp", type:"MV",        role:"", tools:"", youtube:"https://www.youtube.com/watch?v=oL5_Mvc0MYc", video:"", image:""},
+  {title:"Ngã Ba Đèn Đỏ",               type:"Phim ngắn", role:"Clean-up", tools:"Nuke", youtube:"", video:"", image:""},
+  {title:"Hơi Thở Mới",                 type:"Quảng cáo", role:"CG Comp",  tools:"Blender · AE", youtube:"", video:"", image:""},
+  {title:"Thành Phố Ngủ Quên",          type:"3D",        role:"Set extension", tools:"Maya · Substance", youtube:"", video:"", image:""}
 ];
 
-// 3D Character: chọn 1 trong 3 cách cho mỗi nhân vật
-//   model:   file .glb (xuất từ Blender: File > Export > glTF 2.0, chọn .glb) — người xem kéo xoay được
-//   youtube: link video turntable trên YouTube
-//   image:   ảnh render
+// 3D Character: model là file .glb
 const CHARACTERS = [
-  {title:"Robot (mô hình mẫu)", info:"Mẫu miễn phí: RobotExpressive · Tomás Laulhé · CC0. Thay bằng nhân vật của bạn.",
+  {title:"Robot", desc:"Mô hình mẫu để thử khung xem. Thay bằng nhân vật của bạn: file .glb xuất từ Blender hoặc Maya.",
+   tools:"ZBrush · Substance Painter · Blender",
+   credit:"Mẫu miễn phí: RobotExpressive · Tomás Laulhé · CC0",
    model:"https://modelviewer.dev/shared-assets/models/RobotExpressive.glb"}
 ];
 
-// Before / After: before là ảnh gốc, after là ảnh sau khi làm VFX (cùng khung hình, cùng tỉ lệ 16:9)
+// Before / After: before là ảnh gốc, after là ảnh sau khi làm (cùng khung hình 16:9)
 const BEFORE_AFTER = [
   {title:"Thay nền phông xanh", before:"", after:""},
   {title:"Thay bầu trời",       before:"", after:""}
 ];
 
-// Phần mềm
 const TOOLS = [
-  ["Ae","After Effects"],
-  ["Pr","Premiere Pro"],
-  ["Dr","DaVinci Resolve"],
-  ["Mo","Mocha Pro"],
-  ["Zb","ZBrush"],
-  ["Bl","Blender"],
-  ["My","Maya"],
-  ["Sp","Substance Painter"]
+  ["Ae","After Effects"],["Pr","Premiere Pro"],["Dr","DaVinci Resolve"],["Mo","Mocha Pro"],
+  ["Zb","ZBrush"],["Bl","Blender"],["My","Maya"],["Sp","Substance Painter"]
 ];
 /* ================================================== */
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const vid = src => `<video src="${esc(src)}" autoplay muted loop playsinline></video>`;
-
-document.getElementById('cover').innerHTML = COVER_VIDEO
-  ? vid(COVER_VIDEO)
-  : `<div class="ph"></div><span class="ph-label">Video bìa đặt ở đây</span>`;
-
-if (AVATAR) document.getElementById('avatar').innerHTML = `<img src="${esc(AVATAR)}" alt="Ảnh đại diện">`;
-
-document.getElementById('reels').innerHTML = REELS.map(r =>
-  `<div class="reel">${r.video ? vid(r.video) : ''}<span>${esc(r.title)}</span></div>`).join('');
-
 const ytId = s => { if (!s) return ''; const m = String(s).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/)([\w-]{11})/); return m ? m[1] : (/^[\w-]{11}$/.test(s) ? s : ''); };
 const PLAY = `<span class="play" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M3 1.5v17l15-8.5z"/></svg></span>`;
-document.getElementById('projects').innerHTML = PROJECTS.map((p,i) => {
-  const id = ytId(p.youtube);
-  const cover = p.image || (id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : '');
-  return `
-  <article class="project">
-    <div class="shot" id="shot${i}">
-      <button class="shot-btn" type="button" data-i="${i}" aria-label="Phát clip ${esc(p.title)}">
-        ${cover ? `<img src="${esc(cover)}" alt="">` : ''}
-        ${PLAY}
-        ${cover ? '' : `<span class="ph-label">${id || p.video ? 'Bấm để xem' : 'Chưa có clip'}</span>`}
-      </button>
-    </div>
-    <h3>${esc(p.title)}</h3>
-  </article>`;
-}).join('');
-document.getElementById('projects').addEventListener('click', e => {
-  const btn = e.target.closest('.shot-btn'); if (!btn) return;
-  const p = PROJECTS[+btn.dataset.i], id = ytId(p.youtube), shot = btn.parentElement;
-  if (id) {
-    shot.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1" title="${esc(p.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
-  } else if (p.video) {
-    shot.innerHTML = `<video src="${esc(p.video)}" controls autoplay playsinline></video>`;
-  } else {
-    const lb = btn.querySelector('.ph-label'); if (lb) lb.textContent = 'Clip sẽ được thêm sau';
-  }
-});
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = id => document.getElementById(id);
 
-document.getElementById('tools').innerHTML = TOOLS.map(([c,n]) => `<li><b>${esc(c)}</b>${esc(n)}</li>`).join('');
+/* ---- lightbox ---- */
+const lb = $('lb'), lbFrame = $('lbFrame');
+let lastFocus = null;
+function openLB(item, tall){
+  const id = ytId(item.youtube);
+  if (!id && !item.video) return false;
+  lbFrame.className = 'lb-frame' + (tall ? ' tall' : '');
+  lbFrame.innerHTML = id
+    ? `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1" title="${esc(item.title||'Clip')}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`
+    : `<video src="${esc(item.video)}" controls autoplay playsinline></video>`;
+  lastFocus = document.activeElement;
+  lb.hidden = false; document.body.style.overflow = 'hidden'; $('lbClose').focus();
+  return true;
+}
+function closeLB(){ lb.hidden = true; lbFrame.innerHTML = ''; document.body.style.overflow = ''; lastFocus?.focus(); }
+$('lbClose').onclick = closeLB;
+lb.addEventListener('click', e => { if (e.target === lb) closeLB(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && !lb.hidden) closeLB(); });
+
+/* ---- hero ---- */
+$('cover').innerHTML = COVER_VIDEO
+  ? `<video src="${esc(COVER_VIDEO)}" autoplay muted loop playsinline></video>`
+  : `${AVATAR ? `<img class="cover-img" src="${esc(AVATAR)}" alt="">` : ''}<span class="cover-note">Video bìa đặt ở đây</span>`;
+$('avatar').innerHTML = AVATAR ? `<img src="${esc(AVATAR)}" alt="Ảnh đại diện Moru">` : '';
+const socialHTML = SOCIALS.map(([n,u]) => `<li><a href="${u ? esc(u) : '#lien-he'}" ${u ? 'target="_blank" rel="noopener"' : ''}>${esc(n)}</a></li>`).join('');
+$('socials1').innerHTML = socialHTML; $('socials2').innerHTML = socialHTML;
+const reelTarget = SHOWREEL ? {title:'Showreel', youtube:SHOWREEL} : PROJECTS.find(p => ytId(p.youtube) || p.video);
+if (!SHOWREEL) $('reelBtnText').textContent = 'Xem dự án nổi bật';
+if (reelTarget) $('reelBtn').onclick = () => openLB(reelTarget); else $('reelBtn').hidden = true;
+
+/* ---- reels ---- */
+$('reels').innerHTML = REELS.map((r,i) => {
+  const id = ytId(r.youtube);
+  const media = r.video ? `<video src="${esc(r.video)}" muted loop playsinline preload="metadata"></video>`
+              : id ? `<img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="">` : '';
+  return `<button class="reel" type="button" data-i="${i}" aria-label="Mở clip ${esc(r.title)}">${media}<span class="cap">${esc(r.title)}</span></button>`;
+}).join('');
+const reels = $('reels');
+reels.addEventListener('click', e => { const b = e.target.closest('.reel'); if (b) openLB(REELS[+b.dataset.i], true); });
+reels.querySelectorAll('.reel').forEach(b => {
+  const v = b.querySelector('video'); if (!v) return;
+  b.addEventListener('mouseenter', () => v.play().catch(()=>{}));
+  b.addEventListener('mouseleave', () => { v.pause(); v.currentTime = 0; });
+});
+const step = () => (reels.firstElementChild?.getBoundingClientRect().width || 160) + 14;
+$('prevBtn').onclick = () => reels.scrollBy({left:-step()*2, behavior:'smooth'});
+$('nextBtn').onclick = () => reels.scrollBy({left: step()*2, behavior:'smooth'});
+
+/* ---- projects ---- */
+function renderProjects(filter){
+  const list = PROJECTS.map((p,i) => ({p,i})).filter(({p}) => filter === 'Tất cả' || p.type === filter);
+  $('projects').innerHTML = list.map(({p,i},k) => {
+    const id = ytId(p.youtube);
+    const cover = p.image || (id ? `https://i.ytimg.com/vi/${id}/maxresdefault.jpg` : '');
+    const has = id || p.video;
+    const meta = [p.type && `<b>${esc(p.type)}</b>`, p.role && esc(p.role), p.tools && esc(p.tools)].filter(Boolean).join(' · ');
+    return `<article class="project rv${k===0 && filter==='Tất cả' ? ' feat' : ''}">
+      <div class="shot"><button class="shot-btn" type="button" data-i="${i}" aria-label="${has ? 'Phát clip ' : ''}${esc(p.title)}">
+        ${cover ? `<img src="${esc(cover)}" alt="" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=this.src.replace('maxresdefault','hqdefault')}">` : ''}
+        ${p.video && !cover ? `<video src="${esc(p.video)}" muted loop playsinline preload="metadata"></video>` : ''}
+        ${PLAY}${has ? '' : '<span class="ph-label">Chưa có clip</span>'}
+      </button></div>
+      <div><h3 class="p-title">${esc(p.title)}</h3>${meta ? `<p class="p-meta">${meta}</p>` : ''}</div>
+    </article>`;
+  }).join('');
+  observe();
+}
+const types = ['Tất cả', ...new Set(PROJECTS.map(p => p.type).filter(Boolean))];
+$('filters').innerHTML = types.map((t,i) => `<button type="button" aria-pressed="${i===0}">${esc(t)}</button>`).join('');
+$('filters').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  $('filters').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  renderProjects(b.textContent);
+});
+$('projects').addEventListener('click', e => {
+  const b = e.target.closest('.shot-btn'); if (!b) return;
+  if (!openLB(PROJECTS[+b.dataset.i])) { const l = b.querySelector('.ph-label'); if (l) l.textContent = 'Clip sẽ được thêm sau'; }
+});
+$('projects').addEventListener('mouseover', e => { const v = e.target.closest('.shot-btn')?.querySelector('video'); v?.play().catch(()=>{}); });
+$('projects').addEventListener('mouseout', e => { const v = e.target.closest('.shot-btn')?.querySelector('video'); if (v) v.pause(); });
 
 /* ---- 3D characters ---- */
 const FIGURE = `<svg viewBox="0 0 60 100" aria-hidden="true"><g fill="none" stroke="#D9D9D5" stroke-width="1.2"><circle cx="30" cy="14" r="9"/><path d="M18 30h24l4 30M18 30l-4 30M22 30v34l-3 32M38 30v34l3 32M22 64h16"/><ellipse cx="30" cy="96" rx="20" ry="3"/></g></svg>`;
 const ANGLES = [["Trước","0deg 75deg"],["Phải","90deg 75deg"],["Sau","180deg 75deg"],["Trái","-90deg 75deg"],["Trên","0deg 15deg"],["Dưới","0deg 120deg"]];
-document.getElementById('chars').innerHTML = CHARACTERS.map((c,i) => {
+$('chars').innerHTML = CHARACTERS.map((c,i) => {
   const src = esc(c.model||'');
   const left = c.model
-    ? `<model-viewer src="${src}" alt="Turntable ${esc(c.title)}" autoplay auto-rotate auto-rotate-delay="0" rotation-per-second="30deg" disable-zoom disable-pan disable-tap interaction-prompt="none" shadow-intensity="1" camera-orbit="0deg 75deg auto"></model-viewer><span class="tag-l">Turntable</span>`
-    : `<div class="empty">${FIGURE}</div><span class="tag-l">Turntable</span>`;
+    ? `<model-viewer src="${src}" alt="Turntable ${esc(c.title)}" autoplay auto-rotate auto-rotate-delay="0" rotation-per-second="30deg" disable-zoom disable-pan disable-tap interaction-prompt="none" shadow-intensity="1" camera-orbit="0deg 75deg auto"></model-viewer>`
+    : `<div class="empty">${FIGURE}</div>`;
   const right = c.model
-    ? `<model-viewer id="mv${i}" src="${src}" alt="${esc(c.title)}" camera-controls touch-action="pan-y" interaction-prompt="none" shadow-intensity="1" camera-orbit="0deg 75deg auto" interpolation-decay="120"></model-viewer><span class="tag-l">Xem từng góc</span><span class="hint">Kéo để xoay · cuộn để phóng to</span>`
-    : `<div class="empty">${FIGURE}</div><span class="tag-l">Xem từng góc</span><span class="hint">Chưa có model</span>`;
-  const btns = c.model ? `<div class="angles" role="group" aria-label="Chọn góc nhìn">${ANGLES.map(([n,o],k)=>`<button type="button" data-mv="mv${i}" data-orbit="${o}" aria-pressed="${k===0}">${n}</button>`).join('')}</div>` : '';
-  return `<article class="char"><div class="pair"><div class="stage">${left}</div><div class="stage">${right}</div></div>${btns}<h3>${esc(c.title)}</h3><p>${esc(c.info||'')}</p></article>`;
+    ? `<model-viewer id="mv${i}" src="${src}" alt="${esc(c.title)}" camera-controls touch-action="pan-y" interaction-prompt="none" shadow-intensity="1" camera-orbit="0deg 75deg auto" interpolation-decay="120"></model-viewer><span class="hint">Kéo để xoay · cuộn để phóng to</span>`
+    : `<div class="empty">${FIGURE}</div><span class="hint">Chưa có model</span>`;
+  return `<article class="char rv">
+    <div class="pair">
+      <div class="stage">${left}<span class="tag-l">Turntable</span></div>
+      <div class="stage">${right}<span class="tag-l">Xem từng góc</span></div>
+    </div>
+    <div class="info">
+      <div><h3>${esc(c.title)}</h3><p style="margin-top:6px">${esc(c.desc||'')}</p></div>
+      ${c.model ? `<div><div class="lbl">Góc nhìn</div><div class="chips angles" data-mv="mv${i}">${ANGLES.map(([n,o],k)=>`<button type="button" data-orbit="${o}" aria-pressed="${k===0}">${n}</button>`).join('')}</div></div>
+      <div><div class="lbl">Chế độ hiển thị</div><div class="seg modes" data-mv="mv${i}"><button type="button" data-mode="render" aria-pressed="true">Render</button><button type="button" data-mode="clay" aria-pressed="false">Clay</button></div></div>` : ''}
+      ${c.tools ? `<div><div class="lbl">Phần mềm</div><p>${esc(c.tools)}</p></div>` : ''}
+      ${c.credit ? `<div class="credit">${esc(c.credit)}</div>` : ''}
+    </div>
+  </article>`;
 }).join('');
-document.getElementById('chars').addEventListener('click', e => {
-  const b = e.target.closest('.angles button'); if (!b) return;
-  const mv = document.getElementById(b.dataset.mv); if (!mv) return;
-  mv.cameraOrbit = b.dataset.orbit + ' auto'; mv.fieldOfView = 'auto';
-  b.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+$('chars').addEventListener('click', e => {
+  const a = e.target.closest('.angles button');
+  if (a) {
+    const mv = $(a.parentElement.dataset.mv); if (!mv) return;
+    mv.cameraOrbit = a.dataset.orbit + ' auto';
+    a.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === a));
+    return;
+  }
+  const m = e.target.closest('.modes button');
+  if (m) {
+    const mv = $(m.parentElement.dataset.mv); if (!mv) return;
+    setClay(mv, m.dataset.mode === 'clay');
+    m.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === m));
+  }
 });
+function setClay(mv, on){
+  const mats = mv.model?.materials; if (!mats) return;
+  if (!mv._orig) mv._orig = mats.map(mt => {
+    const p = mt.pbrMetallicRoughness;
+    return {c:[...p.baseColorFactor], t:p.baseColorTexture?.texture || null, m:p.metallicFactor, r:p.roughnessFactor};
+  });
+  mats.forEach((mt,k) => {
+    const p = mt.pbrMetallicRoughness, o = mv._orig[k];
+    try {
+      if (on) { p.setBaseColorFactor([0.78,0.77,0.75,1]); p.baseColorTexture?.setTexture(null); p.setMetallicFactor(0); p.setRoughnessFactor(0.85); }
+      else { p.setBaseColorFactor(o.c); p.baseColorTexture?.setTexture(o.t); p.setMetallicFactor(o.m); p.setRoughnessFactor(o.r); }
+    } catch(err) {}
+  });
+}
 if (CHARACTERS.some(c => c.model)) {
   const s = document.createElement('script'); s.type = 'module';
   s.src = 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js';
@@ -325,15 +501,10 @@ function person(ctx,W,H,fill){
   ctx.quadraticCurveTo(cx+h*2.6,y+h*1.4,cx+h*2.7,y+h*3.2); ctx.lineTo(cx+h*2.9,H); ctx.lineTo(cx-h*2.9,H);
   ctx.lineTo(cx-h*2.7,y+h*3.2); ctx.quadraticCurveTo(cx-h*2.6,y+h*1.4,cx-h*0.55,y+h*0.9); ctx.closePath(); ctx.fill();
 }
+function ridge(ctx,W,H,col){ctx.fillStyle=col; ctx.beginPath(); ctx.moveTo(0,H*0.75); for(let x=0;x<=W;x+=W/12) ctx.lineTo(x,H*(0.62+Math.sin(x/W*7)*0.05)); ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.fill();}
 function drawBefore(c,v){
   const ctx=c.getContext('2d'),W=c.width,H=c.height;
-  if(v===1){ // sky plate: flat grey overcast
-    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#B9BCC0'); g.addColorStop(0.7,'#9EA2A6'); g.addColorStop(1,'#55585C');
-    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-    ctx.fillStyle='#3E4144'; ctx.beginPath(); ctx.moveTo(0,H*0.75);
-    for(let x=0;x<=W;x+=W/12) ctx.lineTo(x,H*(0.62+Math.sin(x/W*7)*0.05)); ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.fill();
-    return;
-  }
+  if(v===1){const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#B9BCC0'); g.addColorStop(0.7,'#9EA2A6'); g.addColorStop(1,'#55585C'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H); ridge(ctx,W,H,'#3E4144'); return;}
   const g=ctx.createRadialGradient(W*0.5,H*0.4,H*0.1,W*0.5,H*0.5,W*0.75);
   g.addColorStop(0,'#4FC46A'); g.addColorStop(1,'#1F6E33'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='#F4F4F0'; ctx.lineWidth=Math.max(2,W/300); const r=mulberry32(5);
@@ -349,23 +520,18 @@ function drawAfter(c,v){
   const sun=ctx.createRadialGradient(W*0.3,H*0.62,0,W*0.3,H*0.62,H*0.35);
   sun.addColorStop(0,'rgba(255,214,150,.95)'); sun.addColorStop(0.15,'rgba(255,180,90,.6)'); sun.addColorStop(1,'rgba(255,150,60,0)');
   ctx.fillStyle=sun; ctx.fillRect(0,0,W,H);
-  if(v===1){
-    ctx.fillStyle='#1C1820'; ctx.beginPath(); ctx.moveTo(0,H*0.75);
-    for(let x=0;x<=W;x+=W/12) ctx.lineTo(x,H*(0.62+Math.sin(x/W*7)*0.05)); ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.fill();
-    return;
-  }
+  if(v===1){ridge(ctx,W,H,'#1C1820'); return;}
   const r=mulberry32(21);
   for(const [col,base,maxh] of [['#3A2E45',0.7,0.16],['#241E30',0.74,0.22],['#14121C',0.8,0.3]]){
-    ctx.fillStyle=col; let x=0;
-    while(x<W){const w=W*(0.02+r()*0.05),h=H*(0.04+r()*maxh); ctx.fillRect(x,H*base-h,w,h+H); x+=w+W*0.003;}
+    ctx.fillStyle=col; let x=0; while(x<W){const w=W*(0.02+r()*0.05),h=H*(0.04+r()*maxh); ctx.fillRect(x,H*base-h,w,h+H); x+=w+W*0.003;}
   }
   ctx.fillStyle='#0B0B10'; ctx.fillRect(0,H*0.8,W,H*0.2);
   ctx.save(); ctx.shadowColor='rgba(255,170,80,.9)'; ctx.shadowBlur=H*0.03; person(ctx,W,H,'#120F14'); ctx.restore();
   person(ctx,W,H,'#120F14');
 }
 const layer = (src,alt) => src ? `<img src="${esc(src)}" alt="${esc(alt)}">` : `<canvas></canvas>`;
-document.getElementById('cmps').innerHTML = BEFORE_AFTER.map((b,i) => `
-  <div class="cmp-item">
+$('cmps').innerHTML = BEFORE_AFTER.map((b,i) => `
+  <div class="cmp-item rv">
     <div class="cmp" data-i="${i}">
       <div class="layer after">${layer(b.after,'Sau: '+b.title)}</div>
       <div class="layer before">${layer(b.before,'Trước: '+b.title)}</div>
@@ -378,28 +544,41 @@ document.getElementById('cmps').innerHTML = BEFORE_AFTER.map((b,i) => `
 function paintCmps(){
   document.querySelectorAll('.cmp').forEach(el => {
     const v = +el.dataset.i % 2;
-    const cb = el.querySelector('.before canvas'), ca = el.querySelector('.after canvas');
-    for (const [c,fn] of [[cb,drawBefore],[ca,drawAfter]]) if (c){
+    for (const [c,fn] of [[el.querySelector('.before canvas'),drawBefore],[el.querySelector('.after canvas'),drawAfter]]) if (c){
       const r=c.getBoundingClientRect(), d=Math.min(devicePixelRatio||1,2);
       c.width=Math.max(1,Math.round(r.width*d)); c.height=Math.max(1,Math.round(r.height*d)); fn(c,v);
     }
   });
 }
-paintCmps();
-let rsz; addEventListener('resize',()=>{clearTimeout(rsz); rsz=setTimeout(paintCmps,150);});
 document.querySelectorAll('.cmp input').forEach(inp => inp.addEventListener('input', () => inp.parentElement.style.setProperty('--pos', inp.value+'%')));
 
-const reels = document.getElementById('reels');
-const step = () => (reels.firstElementChild?.getBoundingClientRect().width || 140) + 14;
-document.getElementById('prevBtn').onclick = () => reels.scrollBy({left:-step()*2, behavior:'smooth'});
-document.getElementById('nextBtn').onclick = () => reels.scrollBy({left: step()*2, behavior:'smooth'});
+/* ---- tools ---- */
+$('tools').innerHTML = TOOLS.map(([c,n]) => `<li><b>${esc(c)}</b>${esc(n)}</li>`).join('');
 
-const copyBtn = document.getElementById('copyBtn'), mailEl = document.getElementById('mailAddr');
+/* ---- copy email ---- */
+const copyBtn = $('copyBtn'), mailEl = $('mailAddr');
 copyBtn.addEventListener('click', () => {
-  const done = () => { copyBtn.textContent = 'Đã sao chép'; setTimeout(() => copyBtn.textContent = 'Sao chép', 1800); };
+  const done = () => { copyBtn.textContent = 'Đã sao chép'; setTimeout(() => copyBtn.textContent = 'Sao chép email', 1800); };
   const select = () => { const s = getSelection(), r = document.createRange(); r.selectNodeContents(mailEl); s.removeAllRanges(); s.addRange(r); };
   try { navigator.clipboard.writeText(mailEl.textContent.trim()).then(done, select); } catch(e){ select(); }
 });
+
+/* ---- reveal on scroll ---- */
+let io = null;
+if (!reduce && 'IntersectionObserver' in window) {
+  document.documentElement.classList.add('js-reveal');
+  io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), {rootMargin:'0px 0px -8% 0px'});
+}
+function observe(){
+  document.querySelectorAll('.rv:not(.in)').forEach(el => {
+    if (!io) { el.classList.add('in'); return; }
+    const r = el.getBoundingClientRect();
+    if (r.top < innerHeight) el.classList.add('in'); else io.observe(el);
+  });
+}
+renderProjects('Tất cả');
+paintCmps();
+let rsz; addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(paintCmps, 150); });
 </script>
 </body>
 </html>
