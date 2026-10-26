@@ -48,6 +48,22 @@ button{font:inherit;color:inherit}
 .mono{font-family:var(--f-mono)}
 .wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 
+/* background: drifting colour glow + dot grid with cursor spotlight + vignette */
+.bgfx{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;--mx:50%;--my:40%}
+.bgfx .glow{position:absolute;border-radius:50%;filter:blur(90px);will-change:transform}
+.bgfx .g1{width:46vw;height:46vw;left:-12vw;top:18vh;background:radial-gradient(circle,rgba(240,112,60,.20),rgba(240,112,60,0) 70%);animation:drift1 34s ease-in-out infinite alternate}
+.bgfx .g2{width:52vw;height:52vw;right:-16vw;top:52vh;background:radial-gradient(circle,rgba(126,176,214,.16),rgba(126,176,214,0) 70%);animation:drift2 40s ease-in-out infinite alternate}
+.bgfx .g3{width:30vw;height:30vw;left:38vw;top:110vh;background:radial-gradient(circle,rgba(240,112,60,.10),rgba(240,112,60,0) 70%);animation:drift1 46s ease-in-out infinite alternate-reverse}
+@keyframes drift1{to{transform:translate(14vw,-10vh) scale(1.15)}}
+@keyframes drift2{to{transform:translate(-12vw,-16vh) scale(.9)}}
+.bgfx .dots{position:absolute;inset:0;background-image:radial-gradient(rgba(238,237,234,.09) 1px,transparent 1.3px);background-size:26px 26px;opacity:.55}
+.bgfx .spot{position:absolute;inset:0;background-image:radial-gradient(rgba(240,112,60,.55) 1.1px,transparent 1.5px);background-size:26px 26px;
+  -webkit-mask-image:radial-gradient(circle 240px at var(--mx) var(--my),#000,transparent 70%);mask-image:radial-gradient(circle 240px at var(--mx) var(--my),#000,transparent 70%);opacity:0;transition:opacity .4s ease}
+.bgfx.on .spot{opacity:1}
+.bgfx::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 120% 90% at 50% 45%,transparent 55%,rgba(0,0,0,.55) 100%)}
+@media (prefers-reduced-motion:reduce){.bgfx .glow{animation:none}}
+@media (hover:none){.bgfx .spot{display:none}}
+
 /* film grain */
 .grain{position:fixed;inset:-50%;z-index:40;pointer-events:none;opacity:.07;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -203,6 +219,7 @@ footer{text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--mu
 </head>
 <body>
 
+<div class="bgfx" id="bgfx" aria-hidden="true"><div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div><div class="dots"></div><div class="spot"></div></div>
 <div class="grain" aria-hidden="true"></div>
 
 <header class="top">
@@ -674,6 +691,17 @@ function observe(){
     if (r.top < innerHeight) el.classList.add('in'); else io.observe(el);
   });
 }
+
+/* ---- background spotlight follows the cursor ---- */
+(() => {
+  const bg = $('bgfx'); if (!bg || !matchMedia('(hover:hover)').matches) return;
+  let raf = 0, x = 0, y = 0;
+  addEventListener('pointermove', e => {
+    x = e.clientX; y = e.clientY;
+    if (!raf) raf = requestAnimationFrame(() => { bg.style.setProperty('--mx', x + 'px'); bg.style.setProperty('--my', y + 'px'); bg.classList.add('on'); raf = 0; });
+  }, {passive:true});
+  document.addEventListener('pointerleave', () => bg.classList.remove('on'));
+})();
 renderProjects('Tất cả');
 paintCmps();
 let rsz; addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(paintCmps, 150); });
