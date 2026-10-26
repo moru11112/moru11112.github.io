@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Moru (bản thử)</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Moru · VFX Editor | 3D Artist. Compositing, 3D character, MV và quảng cáo.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Moru · VFX Editor | 3D Artist">
+<meta property="og:description" content="Compositing, 3D character, MV và quảng cáo.">
+<meta property="og:image" content="https://moru11112.github.io/og.jpg">
+<meta property="og:url" content="https://moru11112.github.io/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: dark cinematic single page. Full-bleed cover with the profile laid over its foot, then
+   reels strip, a featured project + 3-up grid, 3D viewer with info panel, before/after pair, tools, contact. */
+:root{
+  --bg:#0B0B0C;
+  --bg2:#111113;
+  --card:#151517;
+  --line:#26262A;
+  --fg:#EEEDEA;
+  --muted:#A6A5A0;
+  --accent:#F0703C;          /* taken from the orange of the avatar's eyes */
+  --accent-ink:#170A04;
+  --ph-a:#2A2B2D; --ph-b:#0E0F10;
+  --f-sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"DM Mono",ui-monospace,Menlo,Consolas,monospace;
+  --radius:3px;
+  --f-display:"Archivo","Arial Black",Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+img{max-width:100%}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.mono{font-family:var(--f-mono)}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* film grain */
+.grain{position:fixed;inset:-50%;z-index:40;pointer-events:none;opacity:.07;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain 1s steps(4) infinite}
+@keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-1%)}100%{transform:translate(0,0)}}
+@media (prefers-reduced-motion:reduce){.grain{animation:none}}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:20px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.brand img{width:30px;height:30px;border-radius:50%;object-fit:cover;border:1.5px solid var(--accent)}
+.nav{display:flex;gap:22px;margin-left:auto}
+.nav a{text-decoration:none;color:var(--muted);font-size:14px}
+.nav a:hover{color:var(--fg)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;text-decoration:none;border:1px solid var(--line);background:none;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--fg)}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.accent:hover{filter:brightness(1.08)}
+.btn svg{width:12px;height:12px;fill:currentColor}
+.top .btn{padding:8px 14px}
+@media (max-width:820px){.nav{display:none}.top .btn{margin-left:auto}}
+
+/* hero */
+.hero{position:relative}
+.cover{position:relative;height:clamp(300px,52vw,600px);overflow:hidden;background:var(--ph-b);container-type:size}
+.cover .yt-bg{position:absolute;top:50%;left:50%;width:max(100cqw,177.78cqh);height:max(100cqh,56.25cqw);transform:translate(-50%,-50%) scale(1.18);border:0;pointer-events:none}
+.cover video,.cover .cover-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cover .cover-img{filter:blur(36px) saturate(1.1) brightness(.55);transform:scale(1.2)}
+.cover::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,11,12,.15) 0%,rgba(11,11,12,0) 35%,rgba(11,11,12,.75) 80%,var(--bg) 100%)}
+.cover-note{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:16px;z-index:1;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#CFCFCB;background:rgba(0,0,0,.45);padding:4px 9px}
+.hero-info{position:relative;z-index:2;margin-top:clamp(-190px,-12vw,-56px)}
+.name{margin:0;font-family:var(--f-display);font-variation-settings:"wdth" 125;font-weight:850;text-transform:uppercase;font-size:clamp(84px,21vw,272px);letter-spacing:-.025em;line-height:.8}
+.hero-row{display:flex;justify-content:space-between;align-items:center;gap:18px 28px;flex-wrap:wrap;margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
+.who{display:flex;align-items:center;gap:14px;min-width:0}
+.avatar{width:58px;height:58px;border-radius:50%;flex:none;overflow:hidden;border:2px solid var(--accent);background:linear-gradient(150deg,#3A3B3E,#121314)}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.role{margin:0;font-family:var(--f-mono);color:var(--accent);font-size:15px}
+.tag{margin:3px 0 0;color:var(--muted);font-size:14px}
+.hero-act{display:flex;align-items:center;gap:14px 26px;flex-wrap:wrap}
+.links{display:flex;flex-wrap:wrap;gap:8px 18px;list-style:none;margin:0;padding:0}
+.links a{font-family:var(--f-mono);font-size:13.5px;text-decoration:none;color:var(--fg)}
+.links a::after{content:" ↗";color:var(--accent)}
+.links a:hover{color:var(--accent)}
+
+/* sections */
+.sec{padding-block:72px 0}
+.sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:26px;border-top:1px solid var(--line);padding-top:20px}
+.sec-head h2{margin:0;font-family:var(--f-display);font-variation-settings:"wdth" 118;font-weight:800;text-transform:uppercase;font-size:clamp(24px,3.4vw,36px);letter-spacing:-.01em;line-height:1.2}
+.sec-head h2 sup{font-family:var(--f-mono);font-size:.4em;font-weight:500;color:var(--accent);margin-left:6px;vertical-align:super;letter-spacing:0}
+.sec-head p{margin:6px 0 0;color:var(--muted);font-family:var(--f-mono);font-size:13.5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font-family:var(--f-mono);font-size:12.5px;padding:6px 12px;border:1px solid var(--line);background:none;border-radius:999px;cursor:pointer;color:var(--muted)}
+.chips button:hover{color:var(--fg);border-color:var(--fg)}
+.chips button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+/* reels */
+.reels-wrap{position:relative}
+.reels{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}
+.reels::-webkit-scrollbar{display:none}
+.reel{flex:0 0 clamp(140px,19vw,200px);aspect-ratio:9/16;position:relative;overflow:hidden;scroll-snap-align:start;border-radius:var(--radius);border:0;padding:0;cursor:pointer;background:linear-gradient(170deg,var(--ph-a),var(--ph-b))}
+.reel:nth-child(3n+2){background:linear-gradient(190deg,#3B3D41,#101112)}
+.reel:nth-child(3n){background:linear-gradient(150deg,#1D1E20,#46484C)}
+.reel video,.reel img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+.reel:hover video,.reel:hover img{transform:scale(1.04)}
+.reel .cap{position:absolute;left:0;right:0;bottom:0;padding:24px 10px 10px;text-align:left;font-family:var(--f-mono);font-size:12px;color:#ECECE8;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+.nav-btn{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:rgba(11,11,12,.8);color:var(--fg);font-size:20px;cursor:pointer;display:grid;place-items:center;z-index:2}
+.nav-btn.prev{left:-8px}.nav-btn.next{right:-8px}
+@media (hover:none),(max-width:720px){.nav-btn{display:none}}
+
+/* projects */
+.projects{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:28px 22px}
+.project{grid-column:span 2;display:flex;flex-direction:column;gap:12px;min-width:0}
+.project.feat{grid-column:1/-1}
+@media (max-width:900px){.project{grid-column:span 3}}
+@media (max-width:600px){.projects{grid-template-columns:1fr}.project,.project.feat{grid-column:auto}}
+.shot{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:var(--radius);overflow:hidden;background:linear-gradient(160deg,var(--ph-a),var(--ph-b))}
+.feat .shot{aspect-ratio:21/9}
+@media (max-width:600px){.feat .shot{aspect-ratio:16/9}}
+.shot-btn{position:absolute;inset:0;width:100%;height:100%;border:0;padding:0;margin:0;background:none;cursor:pointer;display:grid;place-items:center}
+.shot-btn img,.shot-btn video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s ease}
+.shot-btn:hover img,.shot-btn:hover video{transform:scale(1.04)}
+.shot-btn::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 55%,rgba(0,0,0,.45))}
+.play{position:relative;z-index:1;width:58px;height:58px;border-radius:50%;background:rgba(238,237,234,.94);display:grid;place-items:center;box-shadow:0 6px 24px rgba(0,0,0,.4);transition:transform .2s ease,background .2s ease}
+.play svg{width:18px;height:18px;margin-left:3px;fill:#141414}
+.feat .play{width:72px;height:72px}
+.shot-btn:hover .play{transform:scale(1.08);background:var(--accent)}
+.ph-label{position:absolute;left:50%;top:70%;transform:translateX(-50%);z-index:1;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;color:#D9D9D5;background:rgba(0,0,0,.45);padding:4px 9px;white-space:nowrap;text-transform:uppercase}
+.p-title{margin:0;font-size:17px;font-weight:600;letter-spacing:-.01em}
+.feat .p-title{font-size:clamp(20px,2.4vw,26px)}
+.p-meta{margin:2px 0 0;font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.p-meta b{color:var(--accent);font-weight:500}
+
+/* 3D */
+.char{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:860px){.char{grid-template-columns:1fr}}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.stage{position:relative;aspect-ratio:4/5;max-width:100%;border-radius:var(--radius);overflow:hidden;background:radial-gradient(80% 60% at 50% 35%,#36383C,#0F1012 75%)}
+.stage canvas.gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:pan-y}
+.stage.drag canvas.gl{cursor:grab}
+.stage.drag canvas.gl:active{cursor:grabbing}
+.stage .loading{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;color:var(--muted);pointer-events:none}
+.stage .tag-l{position:absolute;left:10px;top:10px;font-family:var(--f-mono);font-size:11px;color:#E5E5E1;background:rgba(0,0,0,.5);padding:3px 8px;pointer-events:none;letter-spacing:.04em;border-radius:4px}
+.stage .hint{position:absolute;left:10px;bottom:10px;font-family:var(--f-mono);font-size:11px;color:#E5E5E1;background:rgba(0,0,0,.5);padding:3px 8px;pointer-events:none;border-radius:4px}
+.stage .empty{position:absolute;inset:0;display:grid;place-items:center}
+.stage .empty svg{width:42%;opacity:.35}
+.info{border:1px solid var(--line);background:var(--card);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.info h3{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.info p{margin:0;color:#C4C3BF;font-size:14px}
+.info .lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.info .credit{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+.seg button{font-family:var(--f-mono);font-size:12.5px;padding:6px 14px;border:0;background:none;border-radius:999px;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+
+/* before / after */
+.cmps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+@media (max-width:720px){.cmps{grid-template-columns:1fr}}
+.cmp-item{display:flex;flex-direction:column;gap:10px;min-width:0}
+.cmp{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:var(--radius);overflow:hidden;--pos:50%;user-select:none;touch-action:pan-y;background:var(--ph-b)}
+.cmp .layer{position:absolute;inset:0}
+.cmp .layer img,.cmp .layer canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.cmp .before{clip-path:inset(0 calc(100% - var(--pos)) 0 0)}
+.cmp .bar{position:absolute;top:0;bottom:0;left:var(--pos);width:2px;margin-left:-1px;background:#fff;pointer-events:none}
+.cmp .bar::after{content:"‹ ›";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:#fff;color:#141414;display:grid;place-items:center;font-size:14px;font-weight:700;letter-spacing:2px}
+.cmp input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize}
+.cmp:has(input:focus-visible) .bar::after{outline:2px solid var(--accent);outline-offset:3px}
+.cmp-item h3{margin:0;font-size:15px;font-weight:600}
+
+/* tools */
+.tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 28px;list-style:none;margin:0;padding:0}
+@media (max-width:720px){.tools{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}}
+.tools li{display:flex;flex-direction:column;gap:6px;padding-block:18px;border-bottom:1px solid var(--line);font-size:16px;font-weight:500;min-width:0}
+.tools b{font-family:var(--f-mono);font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.06em}
+
+/* contact */
+.contact{margin-top:88px;border-top:1px solid var(--line);padding-block:44px 48px}
+.contact .eyebrow{margin:0 0 14px;font-family:var(--f-mono);font-size:13.5px;color:var(--muted)}
+.contact .eyebrow b{color:var(--accent);font-weight:500}
+.mail-big{display:inline-block;max-width:100%;font-family:var(--f-display);font-variation-settings:"wdth" 100;font-weight:750;font-size:clamp(26px,6.4vw,78px);letter-spacing:-.03em;line-height:1.1;text-decoration:none;overflow-wrap:anywhere;background:linear-gradient(var(--accent),var(--accent)) left bottom/0 3px no-repeat;transition:color .25s ease,background-size .35s ease}
+.mail-big:hover{color:var(--accent);background-size:100% 3px}
+.mail-row{display:flex;flex-wrap:wrap;align-items:center;gap:14px 26px;margin-top:26px}
+footer{text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-block:16px 32px}
+
+/* reveal on scroll (content stays visible without JS) */
+.js-reveal .rv{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
+.js-reveal .rv.in{opacity:1;transform:none}
+.hero-info > *{animation:rise .8s ease both}
+.hero-info > *:nth-child(2){animation-delay:.08s}.hero-info > *:nth-child(3){animation-delay:.16s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+@media (prefers-reduced-motion:reduce){.js-reveal .rv{opacity:1;transform:none;transition:none}.hero-info > *{animation:none}.shot-btn img,.reel img,.reel video,.play{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top"><img id="brandAvatar" alt="" src="avatar.jpg">Moru</a>
+    <nav class="nav" aria-label="Mục lục">
+      <a href="#du-an">Dự án</a>
+      <a href="#3d">3D Character</a>
+      <a href="#before-after">Before / After</a>
+      <a href="#phan-mem">Phần mềm</a>
+    </nav>
+    <a class="btn accent" href="#lien-he">Liên hệ</a>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="cover" id="cover"></div>
+  <div class="wrap hero-info">
+    <h1 class="name">Moru</h1>
+    <div class="hero-row">
+      <div class="who">
+        <div class="avatar" id="avatar"></div>
+        <div><p class="role">VFX Editor | 3D Artist</p><p class="tag">Compositing · 3D character · MV · quảng cáo</p></div>
+      </div>
+      <div class="hero-act">
+        <button class="btn accent" type="button" id="reelBtn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 1.5v17l15-8.5z"/></svg><span id="reelBtnText">Xem showreel</span></button>
+        <ul class="links" id="socials1"></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main>
+  <section class="sec wrap rv" id="clips" aria-label="Clip ngắn">
+    <div class="sec-head"><div><h2>Clip ngắn<sup id="nReels"></sup></h2><p>Rê chuột để xem trước · bấm để phát</p></div></div>
+    <div class="reels-wrap">
+      <button class="nav-btn prev" type="button" id="prevBtn" aria-label="Clip trước">‹</button>
+      <div class="reels" id="reels"></div>
+      <button class="nav-btn next" type="button" id="nextBtn" aria-label="Clip tiếp">›</button>
+    </div>
+  </section>
+
+  <section class="sec wrap" id="du-an">
+    <div class="sec-head rv">
+      <div><h2>Dự án<sup id="nProj"></sup></h2><p>Bấm vào khung để xem clip</p></div>
+      <div class="chips" id="filters" role="group" aria-label="Lọc dự án"></div>
+    </div>
+    <div class="projects" id="projects"></div>
+  </section>
+
+  <section class="sec wrap" id="3d">
+    <div class="sec-head rv"><div><h2>3D Character<sup id="nChar"></sup></h2><p>Turntable và xem từng góc</p></div></div>
+    <div id="chars"></div>
+  </section>
+
+  <section class="sec wrap" id="before-after">
+    <div class="sec-head rv"><div><h2>Before / After<sup id="nBA"></sup></h2><p>Kéo thanh trượt để so sánh</p></div></div>
+    <div class="cmps" id="cmps"></div>
+  </section>
+
+  <section class="sec wrap rv" id="phan-mem">
+    <div class="sec-head"><div><h2>Phần mềm<sup id="nTools"></sup></h2><p>Công cụ mình dùng</p></div></div>
+    <ul class="tools" id="tools"></ul>
+  </section>
+
+  <section class="contact wrap rv" id="lien-he">
+    <p class="eyebrow"><b>Liên hệ làm việc</b> · MV · quảng cáo · phim ngắn · 3D character</p>
+    <a class="mail-big" id="mailAddr" href="mailto:tranviethaiedit@gmail.com">tranviethaiedit@gmail.com</a>
+    <div class="mail-row"><button class="btn accent" type="button" id="copyBtn">Sao chép email</button><ul class="links" id="socials2"></ul></div>
+  </section>
+</main>
+
+<footer>© 2026 Moru</footer>
+
+
+
+<script>
+/* =============== SỬA NỘI DUNG Ở ĐÂY =============== */
+// Video bìa: tải file .mp4 lên GitHub rồi ghi tên file, ví dụ "cover.mp4"
+const COVER_VIDEO = "";
+// Hoặc dùng video YouTube làm bìa (tự chạy, không tiếng, lặp lại)
+const COVER_YOUTUBE = "https://www.youtube.com/watch?v=oL5_Mvc0MYc";
+const AVATAR = "avatar.jpg";
+
+// Showreel: link YouTube. Để trống thì nút sẽ mở dự án đầu tiên có clip.
+const SHOWREEL = "";
+
+const SOCIALS = [
+  ["Instagram","https://www.instagram.com/moru6.66/"],
+  ["YouTube","https://www.youtube.com/@moru6430"],
+  ["Facebook",""],
+  ["Behance",""]
+];
+
+// Clip dọc 9:16: video là file .mp4 (rê chuột sẽ chạy), youtube là link Shorts
+const REELS = [
+  {title:"Breakdown 01", video:"", youtube:""},
+  {title:"Breakdown 02", video:"", youtube:""},
+  {title:"Roto · Key",   video:"", youtube:""},
+  {title:"Sky replace",  video:"", youtube:""},
+  {title:"Clean-up",     video:"", youtube:""},
+  {title:"Set extension",video:"", youtube:""}
+];
+
+// Dự án: dự án đầu tiên hiện to nhất, nên đặt dự án mạnh nhất lên đầu.
+//   type: loại (dùng cho bộ lọc) · role: việc bạn làm · tools: phần mềm
+const PROJECTS = [
+  {title:"Vanilla Sky · Moru ft Tomtp", type:"MV",        role:"", tools:"", youtube:"https://www.youtube.com/watch?v=oL5_Mvc0MYc", video:"", image:""},
+  {title:"Ngã Ba Đèn Đỏ",               type:"Phim ngắn", role:"Clean-up", tools:"Nuke", youtube:"", video:"", image:""},
+  {title:"Hơi Thở Mới",                 type:"Quảng cáo", role:"CG Comp",  tools:"Blender · AE", youtube:"", video:"", image:""},
+  {title:"Thành Phố Ngủ Quên",          type:"3D",        role:"Set extension", tools:"Maya · Substance", youtube:"", video:"", image:""}
+];
+
+// 3D Character: model là file .glb
+const CHARACTERS = [
+  {title:"Robot", desc:"Mô hình mẫu để thử khung xem. Thay bằng nhân vật của bạn: file .glb xuất từ Blender hoặc Maya.",
+   tools:"ZBrush · Substance Painter · Blender",
+   credit:"Mẫu miễn phí: RobotExpressive · Tomás Laulhé · CC0",
+   model:"https://modelviewer.dev/shared-assets/models/RobotExpressive.glb"}
+];
+
+// Before / After: before là ảnh gốc, after là ảnh sau khi làm (cùng khung hình 16:9)
+const BEFORE_AFTER = [
+  {title:"Thay nền phông xanh", before:"", after:""},
+  {title:"Thay bầu trời",       before:"", after:""}
+];
+
+const TOOLS = [
+  ["Ae","After Effects"],["Pr","Premiere Pro"],["Dr","DaVinci Resolve"],["Mo","Mocha Pro"],
+  ["Zb","ZBrush"],["Bl","Blender"],["My","Maya"],["Sp","Substance Painter"]
+];
+/* ================================================== */
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ytId = s => { if (!s) return ''; const m = String(s).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/)([\w-]{11})/); return m ? m[1] : (/^[\w-]{11}$/.test(s) ? s : ''); };
+const PLAY = `<span class="play" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M3 1.5v17l15-8.5z"/></svg></span>`;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = id => document.getElementById(id);
+
+/* ---- inline player: the clip plays inside its own frame ---- */
+function playIn(box, item){
+  const id = ytId(item.youtube);
+  if (!id && !item.video) return false;
+  box.innerHTML = id
+    ? `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1" title="${esc(item.title||'Clip')}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>`
+    : `<video src="${esc(item.video)}" controls autoplay playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000"></video>`;
+  return true;
+}
+
+/* ---- hero ---- */
+const coverYT = ytId(COVER_YOUTUBE);
+$('cover').innerHTML = COVER_VIDEO
+  ? `<video src="${esc(COVER_VIDEO)}" autoplay muted loop playsinline></video>`
+  : coverYT
+  ? `${AVATAR ? `<img class="cover-img" src="${esc(AVATAR)}" alt="">` : ''}<iframe class="yt-bg" src="https://www.youtube-nocookie.com/embed/${coverYT}?autoplay=1&mute=1&loop=1&playlist=${coverYT}&controls=0&rel=0&playsinline=1&disablekb=1&iv_load_policy=3" title="Video bìa" allow="autoplay; encrypted-media" tabindex="-1" aria-hidden="true"></iframe>`
+  : `${AVATAR ? `<img class="cover-img" src="${esc(AVATAR)}" alt="">` : ''}<span class="cover-note">Video bìa đặt ở đây</span>`;
+$('avatar').innerHTML = AVATAR ? `<img src="${esc(AVATAR)}" alt="Ảnh đại diện Moru">` : '';
+const socialHTML = SOCIALS.filter(([n,u]) => u).map(([n,u]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(n)}</a></li>`).join('');
+$('socials1').innerHTML = socialHTML; $('socials2').innerHTML = socialHTML;
+const reelTarget = SHOWREEL ? {title:'Showreel', youtube:SHOWREEL} : PROJECTS.find(p => ytId(p.youtube) || p.video);
+if (!SHOWREEL) $('reelBtnText').textContent = 'Xem dự án nổi bật';
+if (reelTarget) $('reelBtn').onclick = () => {
+  if (SHOWREEL) { const f = document.querySelector('.project.feat .shot') || document.querySelector('.project .shot'); f.scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block:'center'}); playIn(f, reelTarget); return; }
+  const i = PROJECTS.indexOf(reelTarget);
+  const btn = document.querySelector(`.shot-btn[data-i="${i}"]`);
+  if (btn) { const box = btn.parentElement; box.scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block:'center'}); playIn(box, reelTarget); }
+}; else $('reelBtn').hidden = true;
+
+/* ---- reels (only clips that exist) ---- */
+const hasClip = x => ytId(x.youtube) || x.video || x.image;
+const pad2 = n => String(n).padStart(2,'0');
+const REELS_SHOWN = REELS.map((r,i) => ({r,i})).filter(({r}) => hasClip(r));
+if (!REELS_SHOWN.length) $('clips').hidden = true;
+$('nReels').textContent = pad2(REELS_SHOWN.length);
+$('reels').innerHTML = REELS_SHOWN.map(({r,i}) => {
+  const id = ytId(r.youtube);
+  const media = r.video ? `<video src="${esc(r.video)}" muted loop playsinline preload="metadata"></video>`
+              : id ? `<img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="">` : '';
+  return `<button class="reel" type="button" data-i="${i}" aria-label="Mở clip ${esc(r.title)}">${media}<span class="cap">${esc(r.title)}</span></button>`;
+}).join('');
+const reels = $('reels');
+reels.addEventListener('click', e => {
+  const b = e.target.closest('.reel'); if (!b || b.dataset.playing) return;
+  const r = REELS[+b.dataset.i];
+  const v = b.querySelector('video');
+  if (v && !ytId(r.youtube)) { v.muted = false; v.controls = true; v.play().catch(()=>{}); b.dataset.playing = 1; return; }
+  const box = document.createElement('div'); box.style.cssText = 'position:absolute;inset:0;z-index:2';
+  if (playIn(box, r)) { b.appendChild(box); b.dataset.playing = 1; }
+});
+reels.querySelectorAll('.reel').forEach(b => {
+  const v = b.querySelector('video'); if (!v) return;
+  b.addEventListener('mouseenter', () => v.play().catch(()=>{}));
+  b.addEventListener('mouseleave', () => { v.pause(); v.currentTime = 0; });
+});
+const step = () => (reels.firstElementChild?.getBoundingClientRect().width || 160) + 14;
+$('prevBtn').onclick = () => reels.scrollBy({left:-step()*2, behavior:'smooth'});
+$('nextBtn').onclick = () => reels.scrollBy({left: step()*2, behavior:'smooth'});
+
+/* ---- projects ---- */
+function renderProjects(filter){
+  const list = PROJECTS.map((p,i) => ({p,i})).filter(({p}) => hasClip(p) && (filter === 'Tất cả' || p.type === filter));
+  $('projects').innerHTML = list.map(({p,i},k) => {
+    const id = ytId(p.youtube);
+    const cover = p.image || (id ? `https://i.ytimg.com/vi/${id}/maxresdefault.jpg` : '');
+    const has = id || p.video;
+    const meta = [p.type && `<b>${esc(p.type)}</b>`, p.role && esc(p.role), p.tools && esc(p.tools)].filter(Boolean).join(' · ');
+    return `<article class="project rv${k===0 && filter==='Tất cả' ? ' feat' : ''}">
+      <div class="shot"><button class="shot-btn" type="button" data-i="${i}" aria-label="${has ? 'Phát clip ' : ''}${esc(p.title)}">
+        ${cover ? `<img src="${esc(cover)}" alt="" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=this.src.replace('maxresdefault','hqdefault')}">` : ''}
+        ${p.video && !cover ? `<video src="${esc(p.video)}" muted loop playsinline preload="metadata"></video>` : ''}
+        ${PLAY}${has ? '' : '<span class="ph-label">Chưa có clip</span>'}
+      </button></div>
+      <div><h3 class="p-title">${esc(p.title)}</h3>${meta ? `<p class="p-meta">${meta}</p>` : ''}</div>
+    </article>`;
+  }).join('');
+  observe();
+}
+const types = ['Tất cả', ...new Set(PROJECTS.filter(hasClip).map(p => p.type).filter(Boolean))];
+$('nProj').textContent = pad2(PROJECTS.filter(hasClip).length);
+if (types.length < 3) $('filters').hidden = true;
+$('filters').innerHTML = types.map((t,i) => `<button type="button" aria-pressed="${i===0}">${esc(t)}</button>`).join('');
+$('filters').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  $('filters').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  renderProjects(b.textContent);
+});
+$('projects').addEventListener('click', e => {
+  const b = e.target.closest('.shot-btn'); if (!b) return;
+  if (!playIn(b.parentElement, PROJECTS[+b.dataset.i])) { const l = b.querySelector('.ph-label'); if (l) l.textContent = 'Clip sẽ được thêm sau'; }
+});
+$('projects').addEventListener('mouseover', e => { const v = e.target.closest('.shot-btn')?.querySelector('video'); v?.play().catch(()=>{}); });
+$('projects').addEventListener('mouseout', e => { const v = e.target.closest('.shot-btn')?.querySelector('video'); if (v) v.pause(); });
+
+/* ---- 3D characters (three.js: render / clay / wireframe) ---- */
+const FIGURE = `<svg viewBox="0 0 60 100" aria-hidden="true"><g fill="none" stroke="#D9D9D5" stroke-width="1.2"><circle cx="30" cy="14" r="9"/><path d="M18 30h24l4 30M18 30l-4 30M22 30v34l-3 32M38 30v34l3 32M22 64h16"/><ellipse cx="30" cy="96" rx="20" ry="3"/></g></svg>`;
+const ANGLES = [["Trước",0,75],["Phải",90,75],["Sau",180,75],["Trái",-90,75],["Trên",0,15],["Dưới",0,120]];
+$('chars').innerHTML = CHARACTERS.map((c,i) => {
+  const empty = `<div class="empty">${FIGURE}</div>`;
+  return `<article class="char rv">
+    <div class="pair">
+      <div class="stage" id="tt${i}">${c.model ? '<span class="loading">Đang tải mô hình…</span>' : empty}<span class="tag-l">Turntable</span></div>
+      <div class="stage drag" id="vw${i}">${c.model ? '<span class="loading">Đang tải mô hình…</span><span class="hint">Kéo để xoay · cuộn để phóng to</span>' : empty + '<span class="hint">Chưa có model</span>'}<span class="tag-l">Xem từng góc</span></div>
+    </div>
+    <div class="info">
+      <div><h3>${esc(c.title)}</h3><p style="margin-top:6px">${esc(c.desc||'')}</p></div>
+      ${c.model ? `<div><div class="lbl">Chế độ hiển thị</div><div class="seg modes" data-i="${i}"><button type="button" data-mode="render" aria-pressed="true">Render</button><button type="button" data-mode="clay" aria-pressed="false">Clay</button><button type="button" data-mode="wire" aria-pressed="false">Lưới</button></div></div>
+      <div><div class="lbl">Góc nhìn</div><div class="chips angles" data-i="${i}">${ANGLES.map(([n,az,po],k)=>`<button type="button" data-az="${az}" data-po="${po}" aria-pressed="${k===0}">${n}</button>`).join('')}</div></div>` : ''}
+      ${c.tools ? `<div><div class="lbl">Phần mềm</div><p>${esc(c.tools)}</p></div>` : ''}
+      ${c.credit ? `<div class="credit">${esc(c.credit)}</div>` : ''}
+    </div>
+  </article>`;
+}).join('');
+
+const viewers = {};   // i -> {tt, vw}
+function loadScript(src){ return new Promise((ok, bad) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = bad; document.head.appendChild(s); }); }
+const THREE_BASE = 'https://cdn.jsdelivr.net/npm/three@0.147.0/';
+let threeReady = null;
+function getThree(){
+  if (!threeReady) threeReady = loadScript(THREE_BASE + 'build/three.min.js')
+    .then(() => Promise.all([loadScript(THREE_BASE + 'examples/js/loaders/GLTFLoader.js'), loadScript(THREE_BASE + 'examples/js/controls/OrbitControls.js')]));
+  return threeReady;
+}
+const gltfCache = {};
+function loadGLTF(url){ return gltfCache[url] || (gltfCache[url] = new Promise((ok, bad) => new THREE.GLTFLoader().load(url, ok, undefined, bad))); }
+
+function makeViewer(el, url, {turntable}){
+  const T = THREE;
+  const renderer = new T.WebGLRenderer({antialias:true, alpha:true});
+  renderer.outputEncoding = T.sRGBEncoding;
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.domElement.className = 'gl';
+  el.prepend(renderer.domElement);
+  const scene = new T.Scene();
+  const camera = new T.PerspectiveCamera(32, 1, 0.01, 1000);
+  scene.add(new T.HemisphereLight(0xffffff, 0x3a3a40, 1.1));
+  const key = new T.DirectionalLight(0xffffff, 1.6); key.position.set(3, 5, 4); scene.add(key);
+  const rim = new T.DirectionalLight(0xF0703C, 0.9); rim.position.set(-4, 3, -4); scene.add(rim);
+  const controls = new T.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.enablePan = false;
+  if (turntable) { controls.enabled = false; controls.autoRotate = true; controls.autoRotateSpeed = reduce ? 0 : 2.4; }
+  const clock = new T.Clock();
+  const v = {renderer, scene, camera, controls, mixer:null, model:null, meshes:[], mode:'render', anim:null, dist:5, visible:true};
+  const clayMat = new T.MeshStandardMaterial({color:0xC9C7C2, roughness:.85, metalness:0});
+  const darkMat = new T.MeshStandardMaterial({color:0x2A2B2E, roughness:.9, metalness:0, polygonOffset:true, polygonOffsetFactor:1, polygonOffsetUnits:1});
+  const wireMat = new T.MeshBasicMaterial({color:0xF0703C, wireframe:true, transparent:true, opacity:.85});
+
+  function size(){
+    const w = el.clientWidth, h = el.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(size).observe(el); size();
+
+  loadGLTF(url).then(gltf => {
+    // each viewer needs its own copy (skinned meshes must be cloned with their skeleton)
+    const model = T.SkeletonUtils ? T.SkeletonUtils.clone(gltf.scene) : cloneSkinned(gltf.scene);
+    scene.add(model); v.model = model;
+    model.traverse(o => { if (o.isMesh) { o.userData.orig = o.material; v.meshes.push(o); } });
+    const box = new T.Box3().setFromObject(model), sz = box.getSize(new T.Vector3()), ctr = box.getCenter(new T.Vector3());
+    model.position.sub(ctr);
+    const r = sz.length() / 2;
+    v.dist = r / Math.sin(T.MathUtils.degToRad(camera.fov / 2)) * 0.95;
+    controls.minDistance = v.dist * 0.35; controls.maxDistance = v.dist * 2.5;
+    setAngle(v, 0, 75, true);
+    if (gltf.animations.length) {
+      v.mixer = new T.AnimationMixer(model);
+      const clip = gltf.animations.find(a => /idle/i.test(a.name)) || gltf.animations[0];
+      v.mixer.clipAction(clip).play();
+    }
+    el.querySelector('.loading')?.remove();
+    setMode(v, v.mode);
+  }).catch(() => { const l = el.querySelector('.loading'); if (l) l.textContent = 'Không tải được mô hình'; });
+
+  new IntersectionObserver(es => { v.visible = es[0].isIntersecting; }).observe(el);
+  (function loop(){
+    requestAnimationFrame(loop);
+    const dt = clock.getDelta();
+    if (!v.visible || document.hidden) return;
+    if (v.mixer && !reduce) v.mixer.update(dt);
+    if (v.anim) {
+      const t = Math.min(1, (performance.now() - v.anim.t0) / 650), e = 1 - Math.pow(1 - t, 3);
+      camera.position.lerpVectors(v.anim.from, v.anim.to, e);
+      if (t >= 1) v.anim = null;
+    }
+    controls.update();
+    renderer.autoClear = true;
+    if (v.mode === 'wire') {
+      scene.overrideMaterial = null; renderer.render(scene, camera);
+      renderer.autoClear = false; scene.overrideMaterial = wireMat; renderer.render(scene, camera); scene.overrideMaterial = null;
+    } else renderer.render(scene, camera);
+  })();
+  v.clay = clayMat; v.dark = darkMat;
+  return v;
+}
+function cloneSkinned(src){
+  // minimal SkeletonUtils.clone for r147 non-module builds
+  const clone = src.clone(true);
+  const srcBones = {}, cloneBones = {};
+  src.traverse(o => { if (o.isBone) srcBones[o.name] = o; });
+  clone.traverse(o => { if (o.isBone) cloneBones[o.name] = o; });
+  const srcMeshes = []; src.traverse(o => { if (o.isSkinnedMesh) srcMeshes.push(o); });
+  let k = 0;
+  clone.traverse(o => {
+    if (!o.isSkinnedMesh) return;
+    const s = srcMeshes[k++];
+    const bones = s.skeleton.bones.map(b => cloneBones[b.name]);
+    o.bind(new THREE.Skeleton(bones, s.skeleton.boneInverses), s.bindMatrix);
+  });
+  return clone;
+}
+function setMode(v, mode){
+  v.mode = mode;
+  v.meshes.forEach(m => { m.material = mode === 'render' ? m.userData.orig : mode === 'clay' ? v.clay : v.dark; });
+}
+function setAngle(v, az, po, jump){
+  const T = THREE, r = v.camera.position.length() > 0.001 && !jump ? v.camera.position.distanceTo(v.controls.target) : v.dist;
+  const th = T.MathUtils.degToRad(az), ph = T.MathUtils.degToRad(po);
+  const to = new T.Vector3(r * Math.sin(ph) * Math.sin(th), r * Math.cos(ph), r * Math.sin(ph) * Math.cos(th));
+  if (jump || reduce) { v.camera.position.copy(to); v.camera.lookAt(0,0,0); v.anim = null; }
+  else v.anim = {from: v.camera.position.clone(), to, t0: performance.now()};
+}
+
+if (CHARACTERS.some(c => c.model)) {
+  getThree().then(() => {
+    CHARACTERS.forEach((c,i) => {
+      if (!c.model) return;
+      viewers[i] = { tt: makeViewer($('tt'+i), c.model, {turntable:true}), vw: makeViewer($('vw'+i), c.model, {turntable:false}) };
+    });
+  }).catch(() => document.querySelectorAll('.stage .loading').forEach(l => l.textContent = 'Không tải được trình xem 3D'));
+}
+$('chars').addEventListener('click', e => {
+  const a = e.target.closest('.angles button');
+  if (a) {
+    const v = viewers[a.parentElement.dataset.i]?.vw; if (!v) return;
+    setAngle(v, +a.dataset.az, +a.dataset.po);
+    a.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === a));
+    return;
+  }
+  const m = e.target.closest('.modes button');
+  if (m) {
+    const pair = viewers[m.parentElement.dataset.i]; if (!pair) return;
+    setMode(pair.tt, m.dataset.mode); setMode(pair.vw, m.dataset.mode);
+    m.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === m));
+  }
+});
+
+/* ---- before / after ---- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function person(ctx,W,H,fill){
+  const cx=W*0.5, h=H*0.06, y=H*0.42;
+  ctx.fillStyle=fill; ctx.beginPath(); ctx.arc(cx,y,h,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(cx-h*0.55,y+h*0.9); ctx.lineTo(cx+h*0.55,y+h*0.9);
+  ctx.quadraticCurveTo(cx+h*2.6,y+h*1.4,cx+h*2.7,y+h*3.2); ctx.lineTo(cx+h*2.9,H); ctx.lineTo(cx-h*2.9,H);
+  ctx.lineTo(cx-h*2.7,y+h*3.2); ctx.quadraticCurveTo(cx-h*2.6,y+h*1.4,cx-h*0.55,y+h*0.9); ctx.closePath(); ctx.fill();
+}
+function ridge(ctx,W,H,col){ctx.fillStyle=col; ctx.beginPath(); ctx.moveTo(0,H*0.75); for(let x=0;x<=W;x+=W/12) ctx.lineTo(x,H*(0.62+Math.sin(x/W*7)*0.05)); ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.fill();}
+function drawBefore(c,v){
+  const ctx=c.getContext('2d'),W=c.width,H=c.height;
+  if(v===1){const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#B9BCC0'); g.addColorStop(0.7,'#9EA2A6'); g.addColorStop(1,'#55585C'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H); ridge(ctx,W,H,'#3E4144'); return;}
+  const g=ctx.createRadialGradient(W*0.5,H*0.4,H*0.1,W*0.5,H*0.5,W*0.75);
+  g.addColorStop(0,'#4FC46A'); g.addColorStop(1,'#1F6E33'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#F4F4F0'; ctx.lineWidth=Math.max(2,W/300); const r=mulberry32(5);
+  for(let i=0;i<9;i++){const x=W*(0.08+r()*0.84),y=H*(0.08+r()*0.6),s=W/90; if(Math.abs(x-W*0.5)<W*0.12&&y>H*0.3)continue;
+    ctx.beginPath(); ctx.moveTo(x-s,y-s); ctx.lineTo(x+s,y+s); ctx.moveTo(x+s,y-s); ctx.lineTo(x-s,y+s); ctx.stroke();}
+  person(ctx,W,H,'#1B1F22');
+}
+function drawAfter(c,v){
+  const ctx=c.getContext('2d'),W=c.width,H=c.height;
+  const sky=ctx.createLinearGradient(0,0,0,H*0.72);
+  sky.addColorStop(0,'#0E1A33'); sky.addColorStop(0.55,'#4A3A5C'); sky.addColorStop(1,'#E89A4A');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+  const sun=ctx.createRadialGradient(W*0.3,H*0.62,0,W*0.3,H*0.62,H*0.35);
+  sun.addColorStop(0,'rgba(255,214,150,.95)'); sun.addColorStop(0.15,'rgba(255,180,90,.6)'); sun.addColorStop(1,'rgba(255,150,60,0)');
+  ctx.fillStyle=sun; ctx.fillRect(0,0,W,H);
+  if(v===1){ridge(ctx,W,H,'#1C1820'); return;}
+  const r=mulberry32(21);
+  for(const [col,base,maxh] of [['#3A2E45',0.7,0.16],['#241E30',0.74,0.22],['#14121C',0.8,0.3]]){
+    ctx.fillStyle=col; let x=0; while(x<W){const w=W*(0.02+r()*0.05),h=H*(0.04+r()*maxh); ctx.fillRect(x,H*base-h,w,h+H); x+=w+W*0.003;}
+  }
+  ctx.fillStyle='#0B0B10'; ctx.fillRect(0,H*0.8,W,H*0.2);
+  ctx.save(); ctx.shadowColor='rgba(255,170,80,.9)'; ctx.shadowBlur=H*0.03; person(ctx,W,H,'#120F14'); ctx.restore();
+  person(ctx,W,H,'#120F14');
+}
+const layer = (src,alt) => src ? `<img src="${esc(src)}" alt="${esc(alt)}">` : `<canvas></canvas>`;
+$('cmps').innerHTML = BEFORE_AFTER.map((b,i) => `
+  <div class="cmp-item rv">
+    <div class="cmp" data-i="${i}">
+      <div class="layer after">${layer(b.after,'Sau: '+b.title)}</div>
+      <div class="layer before">${layer(b.before,'Trước: '+b.title)}</div>
+      <div class="bar" aria-hidden="true"></div>
+      <input type="range" id="cmp${i}" min="0" max="100" value="50" aria-label="So sánh trước và sau: ${esc(b.title)}">
+    </div>
+    <h3>${esc(b.title)}</h3>
+  </div>`).join('');
+function paintCmps(){
+  document.querySelectorAll('.cmp').forEach(el => {
+    const v = +el.dataset.i % 2;
+    for (const [c,fn] of [[el.querySelector('.before canvas'),drawBefore],[el.querySelector('.after canvas'),drawAfter]]) if (c){
+      const r=c.getBoundingClientRect(), d=Math.min(devicePixelRatio||1,2);
+      c.width=Math.max(1,Math.round(r.width*d)); c.height=Math.max(1,Math.round(r.height*d)); fn(c,v);
+    }
+  });
+}
+document.querySelectorAll('.cmp input').forEach(inp => inp.addEventListener('input', () => inp.parentElement.style.setProperty('--pos', inp.value+'%')));
+
+/* ---- tools ---- */
+$('nTools').textContent = pad2(TOOLS.length);
+$('nChar').textContent = pad2(CHARACTERS.length);
+$('nBA').textContent = pad2(BEFORE_AFTER.length);
+$('tools').innerHTML = TOOLS.map(([c,n]) => `<li><b>${esc(c)}</b>${esc(n)}</li>`).join('');
+
+/* ---- copy email ---- */
+const copyBtn = $('copyBtn'), mailEl = $('mailAddr');
+copyBtn.addEventListener('click', () => {
+  const done = () => { copyBtn.textContent = 'Đã sao chép'; setTimeout(() => copyBtn.textContent = 'Sao chép email', 1800); };
+  const select = () => { const s = getSelection(), r = document.createRange(); r.selectNodeContents(mailEl); s.removeAllRanges(); s.addRange(r); };
+  try { navigator.clipboard.writeText(mailEl.textContent.trim()).then(done, select); } catch(e){ select(); }
+});
+
+/* ---- reveal on scroll ---- */
+let io = null;
+if (!reduce && 'IntersectionObserver' in window) {
+  document.documentElement.classList.add('js-reveal');
+  io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), {rootMargin:'0px 0px -8% 0px'});
+}
+function observe(){
+  document.querySelectorAll('.rv:not(.in)').forEach(el => {
+    if (!io) { el.classList.add('in'); return; }
+    const r = el.getBoundingClientRect();
+    if (r.top < innerHeight) el.classList.add('in'); else io.observe(el);
+  });
+}
+renderProjects('Tất cả');
+paintCmps();
+let rsz; addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(paintCmps, 150); });
+</script>
+</body>
+</html>
