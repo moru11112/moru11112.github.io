@@ -396,7 +396,11 @@ if (AVATAR_VIDEO) {
   const vid = cls => `<video ${cls} src="${esc(AVATAR_VIDEO)}" poster="${esc(AVATAR)}" autoplay muted loop playsinline preload="auto" aria-label="Avatar Moru"></video>`;
   $('avatar').innerHTML = vid('');
   const bi = $('brandAvatar'); if (bi) { bi.insertAdjacentHTML('afterend', vid('class="brand-av"')); bi.remove(); }
-  if (reduce) document.querySelectorAll('#avatar video, .brand-av').forEach(v => { v.removeAttribute('autoplay'); v.pause(); });
+  const avs = [...document.querySelectorAll('#avatar video, .brand-av')];
+  const kick = () => avs.forEach(v => { v.muted = true; v.defaultMuted = true; v.playsInline = true; if (v.paused) v.play().catch(()=>{}); });
+  avs.forEach(v => { v.addEventListener('canplay', kick, {once:true}); v.addEventListener('pause', () => setTimeout(kick, 300)); });
+  kick();
+  addEventListener('pointerdown', kick, {once:true}); document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
 }
 const socialHTML = SOCIALS.filter(([n,u]) => u).map(([n,u]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(n)}</a></li>`).join('');
 $('socials1').innerHTML = socialHTML; $('socials2').innerHTML = socialHTML;
@@ -520,7 +524,7 @@ function makeViewer(el, url, {turntable}){
   const rim = new T.DirectionalLight(0xF0703C, 0.9); rim.position.set(-4, 3, -4); scene.add(rim);
   const controls = new T.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true; controls.enablePan = false;
-  if (turntable) { controls.enabled = false; controls.autoRotate = true; controls.autoRotateSpeed = reduce ? 0 : 2.4; }
+  if (turntable) { controls.enabled = false; controls.autoRotate = true; controls.autoRotateSpeed = 2.4; }
   const clock = new T.Clock();
   const v = {renderer, scene, camera, controls, mixer:null, model:null, meshes:[], mode:'render', anim:null, dist:5, visible:true};
   const clayMat = new T.MeshStandardMaterial({color:0xC9C7C2, roughness:.85, metalness:0});
@@ -558,7 +562,7 @@ function makeViewer(el, url, {turntable}){
     requestAnimationFrame(loop);
     const dt = clock.getDelta();
     if (!v.visible || document.hidden) return;
-    if (v.mixer && !reduce) v.mixer.update(dt);
+    if (v.mixer) v.mixer.update(dt);
     if (v.anim) {
       const t = Math.min(1, (performance.now() - v.anim.t0) / 650), e = 1 - Math.pow(1 - t, 3);
       camera.position.lerpVectors(v.anim.from, v.anim.to, e);
