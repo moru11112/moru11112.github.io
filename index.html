@@ -101,6 +101,20 @@ a{color:inherit}
 .cmp .lb.l{left:8px}.cmp .lb.r{right:8px}
 .cmp-item h3{margin:0;font-family:var(--f-mono);font-size:13.5px;font-weight:500}
 
+/* 3D characters */
+.chars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px}
+@media (max-width:480px){.chars{grid-template-columns:1fr}}
+.char{border:1px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.stage{position:relative;aspect-ratio:3/4;max-width:100%;border-radius:6px;overflow:hidden;background:radial-gradient(80% 60% at 50% 35%,#3A3C40,#111214 75%)}
+.stage model-viewer{position:absolute;inset:0;width:100%;height:100%;background:transparent;--poster-color:transparent}
+.stage img,.stage iframe,.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0}
+.stage .shot-btn .ph-label{top:72%}
+.stage .hint{position:absolute;left:8px;bottom:8px;font-family:var(--f-mono);font-size:11px;color:#E5E5E1;background:rgba(0,0,0,.5);padding:2px 7px;pointer-events:none}
+.stage .empty{position:absolute;inset:0;display:grid;place-items:center}
+.stage .empty svg{width:42%;opacity:.35}
+.char h3{margin:0;font-family:var(--f-mono);font-size:13.5px;font-weight:500}
+.char p{margin:0;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+
 /* tools */
 .tools{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;list-style:none;margin:0;padding:18px 16px}
 .tools li{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;padding:6px 12px 6px 6px;border:1px solid var(--line);border-radius:999px}
@@ -125,7 +139,7 @@ footer{text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--mu
   <section class="profile">
     <div class="avatar" id="avatar">TB</div>
     <h1 class="name">Tên Của Bạn</h1>
-    <p class="role">VFX Editor | Compositor</p>
+    <p class="role">VFX Editor | 3D Artist</p>
     <p class="tag">plate → final</p>
     <ul class="socials">
       <li><a href="#" target="_blank" rel="noopener">Instagram</a></li>
@@ -146,6 +160,11 @@ footer{text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--mu
   <section class="block">
     <div class="block-head"><h2>Dự án</h2><p>Những dự án gần đây</p></div>
     <div class="projects" id="projects"></div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><h2>3D Character</h2><p>Kéo để xoay mô hình</p></div>
+    <div class="chars" id="chars"></div>
   </section>
 
   <section class="block">
@@ -194,6 +213,15 @@ const PROJECTS = [
   {title:"Ngã Ba Đèn Đỏ | Phim ngắn",     youtube:"", video:"", image:""},
   {title:"Hơi Thở Mới | Quảng cáo",       youtube:"", video:"", image:""},
   {title:"Thành Phố Ngủ Quên | VFX",      youtube:"", video:"", image:""}
+];
+
+// 3D Character: chọn 1 trong 3 cách cho mỗi nhân vật
+//   model:   file .glb (xuất từ Blender: File > Export > glTF 2.0, chọn .glb) — người xem kéo xoay được
+//   youtube: link video turntable trên YouTube
+//   image:   ảnh render
+const CHARACTERS = [
+  {title:"Mô hình mẫu", info:"Thay bằng nhân vật của bạn", model:"https://modelviewer.dev/shared-assets/models/Astronaut.glb", youtube:"", image:""},
+  {title:"Character 02", info:"Sculpt · Texture · Render",  model:"", youtube:"", image:""}
 ];
 
 // Before / After: before là ảnh gốc, after là ảnh sau khi làm VFX (cùng khung hình, cùng tỉ lệ 16:9)
@@ -254,6 +282,28 @@ document.getElementById('projects').addEventListener('click', e => {
 });
 
 document.getElementById('tools').innerHTML = TOOLS.map(([c,n]) => `<li><b>${esc(c)}</b>${esc(n)}</li>`).join('');
+
+/* ---- 3D characters ---- */
+const FIGURE = `<svg viewBox="0 0 60 100" aria-hidden="true"><g fill="none" stroke="#D9D9D5" stroke-width="1.2"><circle cx="30" cy="14" r="9"/><path d="M18 30h24l4 30M18 30l-4 30M22 30v34l-3 32M38 30v34l3 32M22 64h16"/><ellipse cx="30" cy="96" rx="20" ry="3"/></g></svg>`;
+document.getElementById('chars').innerHTML = CHARACTERS.map((c,i) => {
+  const id = ytId(c.youtube);
+  let stage;
+  if (c.model) stage = `<model-viewer src="${esc(c.model)}" alt="${esc(c.title)}" camera-controls auto-rotate auto-rotate-delay="1500" rotation-per-second="20deg" shadow-intensity="1" exposure="1" touch-action="pan-y" interaction-prompt="none"></model-viewer><span class="hint">Kéo để xoay</span>`;
+  else if (id) stage = `<button class="shot-btn char-yt" type="button" data-i="${i}" aria-label="Phát turntable ${esc(c.title)}"><img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="">${PLAY}</button>`;
+  else if (c.image) stage = `<img src="${esc(c.image)}" alt="${esc(c.title)}">`;
+  else stage = `<div class="empty">${FIGURE}</div><span class="hint">Chưa có model</span>`;
+  return `<article class="char"><div class="stage">${stage}</div><h3>${esc(c.title)}</h3><p>${esc(c.info)}</p></article>`;
+}).join('');
+document.getElementById('chars').addEventListener('click', e => {
+  const b = e.target.closest('.char-yt'); if (!b) return;
+  const c = CHARACTERS[+b.dataset.i];
+  b.parentElement.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${ytId(c.youtube)}?autoplay=1&rel=0&playsinline=1&loop=1" title="${esc(c.title)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+});
+if (CHARACTERS.some(c => c.model)) {
+  const s = document.createElement('script'); s.type = 'module';
+  s.src = 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js';
+  document.head.appendChild(s);
+}
 
 /* ---- before / after ---- */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
