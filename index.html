@@ -174,8 +174,6 @@ button{font:inherit;color:inherit}
 .cmp .bar::after{content:"‹ ›";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:#fff;color:#141414;display:grid;place-items:center;font-size:14px;font-weight:700;letter-spacing:2px}
 .cmp input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize}
 .cmp:has(input:focus-visible) .bar::after{outline:2px solid var(--accent);outline-offset:3px}
-.cmp .lb{position:absolute;top:10px;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;color:#fff;background:rgba(0,0,0,.55);padding:3px 8px;pointer-events:none;border-radius:4px}
-.cmp .lb.l{left:10px}.cmp .lb.r{right:10px}
 .cmp-item h3{margin:0;font-size:15px;font-weight:600}
 
 /* tools */
@@ -191,13 +189,6 @@ button{font:inherit;color:inherit}
 .mail span{font-family:var(--f-mono);font-size:clamp(15px,2.4vw,20px);user-select:all;overflow-wrap:anywhere;min-width:0}
 .contact .socials{justify-content:center;margin-top:22px}
 footer{text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-block:16px 32px}
-
-/* lightbox */
-.lb{position:fixed;inset:0;z-index:50;background:rgba(5,5,6,.92);backdrop-filter:blur(6px);display:grid;place-items:center;padding:max(56px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
-.lb-frame{position:relative;width:min(1100px,100%);aspect-ratio:16/9;max-height:100%;background:#000;border-radius:8px;overflow:hidden}
-.lb-frame.tall{width:auto;height:min(82vh,100%);aspect-ratio:9/16}
-.lb-frame iframe,.lb-frame video{position:absolute;inset:0;width:100%;height:100%;border:0}
-.lb-close{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));width:42px;height:42px;border-radius:50%;border:1px solid #3A3A3E;background:#151517;color:#EEEDEA;font-size:22px;cursor:pointer;display:grid;place-items:center}
 
 /* reveal on scroll (content stays visible without JS) */
 .js-reveal .rv{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
@@ -246,7 +237,7 @@ footer{text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--mu
 
 <main>
   <section class="sec wrap rv" aria-label="Clip ngắn">
-    <div class="sec-head"><div><h2>Clip ngắn</h2><p>Rê chuột để xem trước · bấm để mở</p></div></div>
+    <div class="sec-head"><div><h2>Clip ngắn</h2><p>Rê chuột để xem trước · bấm để phát</p></div></div>
     <div class="reels-wrap">
       <button class="nav-btn prev" type="button" id="prevBtn" aria-label="Clip trước">‹</button>
       <div class="reels" id="reels"></div>
@@ -287,10 +278,7 @@ footer{text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--mu
 
 <footer>© 2026 Moru</footer>
 
-<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Xem clip" hidden>
-  <button class="lb-close" type="button" id="lbClose" aria-label="Đóng">×</button>
-  <div class="lb-frame" id="lbFrame"></div>
-</div>
+
 
 <script>
 /* =============== SỬA NỘI DUNG Ở ĐÂY =============== */
@@ -353,24 +341,15 @@ const PLAY = `<span class="play" aria-hidden="true"><svg viewBox="0 0 20 20"><pa
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = id => document.getElementById(id);
 
-/* ---- lightbox ---- */
-const lb = $('lb'), lbFrame = $('lbFrame');
-let lastFocus = null;
-function openLB(item, tall){
+/* ---- inline player: the clip plays inside its own frame ---- */
+function playIn(box, item){
   const id = ytId(item.youtube);
   if (!id && !item.video) return false;
-  lbFrame.className = 'lb-frame' + (tall ? ' tall' : '');
-  lbFrame.innerHTML = id
-    ? `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1" title="${esc(item.title||'Clip')}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`
-    : `<video src="${esc(item.video)}" controls autoplay playsinline></video>`;
-  lastFocus = document.activeElement;
-  lb.hidden = false; document.body.style.overflow = 'hidden'; $('lbClose').focus();
+  box.innerHTML = id
+    ? `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1" title="${esc(item.title||'Clip')}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>`
+    : `<video src="${esc(item.video)}" controls autoplay playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000"></video>`;
   return true;
 }
-function closeLB(){ lb.hidden = true; lbFrame.innerHTML = ''; document.body.style.overflow = ''; lastFocus?.focus(); }
-$('lbClose').onclick = closeLB;
-lb.addEventListener('click', e => { if (e.target === lb) closeLB(); });
-addEventListener('keydown', e => { if (e.key === 'Escape' && !lb.hidden) closeLB(); });
 
 /* ---- hero ---- */
 $('cover').innerHTML = COVER_VIDEO
@@ -381,7 +360,12 @@ const socialHTML = SOCIALS.map(([n,u]) => `<li><a href="${u ? esc(u) : '#lien-he
 $('socials1').innerHTML = socialHTML; $('socials2').innerHTML = socialHTML;
 const reelTarget = SHOWREEL ? {title:'Showreel', youtube:SHOWREEL} : PROJECTS.find(p => ytId(p.youtube) || p.video);
 if (!SHOWREEL) $('reelBtnText').textContent = 'Xem dự án nổi bật';
-if (reelTarget) $('reelBtn').onclick = () => openLB(reelTarget); else $('reelBtn').hidden = true;
+if (reelTarget) $('reelBtn').onclick = () => {
+  if (SHOWREEL) { const f = document.querySelector('.project.feat .shot') || document.querySelector('.project .shot'); f.scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block:'center'}); playIn(f, reelTarget); return; }
+  const i = PROJECTS.indexOf(reelTarget);
+  const btn = document.querySelector(`.shot-btn[data-i="${i}"]`);
+  if (btn) { const box = btn.parentElement; box.scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block:'center'}); playIn(box, reelTarget); }
+}; else $('reelBtn').hidden = true;
 
 /* ---- reels ---- */
 $('reels').innerHTML = REELS.map((r,i) => {
@@ -391,7 +375,14 @@ $('reels').innerHTML = REELS.map((r,i) => {
   return `<button class="reel" type="button" data-i="${i}" aria-label="Mở clip ${esc(r.title)}">${media}<span class="cap">${esc(r.title)}</span></button>`;
 }).join('');
 const reels = $('reels');
-reels.addEventListener('click', e => { const b = e.target.closest('.reel'); if (b) openLB(REELS[+b.dataset.i], true); });
+reels.addEventListener('click', e => {
+  const b = e.target.closest('.reel'); if (!b || b.dataset.playing) return;
+  const r = REELS[+b.dataset.i];
+  const v = b.querySelector('video');
+  if (v && !ytId(r.youtube)) { v.muted = false; v.controls = true; v.play().catch(()=>{}); b.dataset.playing = 1; return; }
+  const box = document.createElement('div'); box.style.cssText = 'position:absolute;inset:0;z-index:2';
+  if (playIn(box, r)) { b.appendChild(box); b.dataset.playing = 1; }
+});
 reels.querySelectorAll('.reel').forEach(b => {
   const v = b.querySelector('video'); if (!v) return;
   b.addEventListener('mouseenter', () => v.play().catch(()=>{}));
@@ -429,7 +420,7 @@ $('filters').addEventListener('click', e => {
 });
 $('projects').addEventListener('click', e => {
   const b = e.target.closest('.shot-btn'); if (!b) return;
-  if (!openLB(PROJECTS[+b.dataset.i])) { const l = b.querySelector('.ph-label'); if (l) l.textContent = 'Clip sẽ được thêm sau'; }
+  if (!playIn(b.parentElement, PROJECTS[+b.dataset.i])) { const l = b.querySelector('.ph-label'); if (l) l.textContent = 'Clip sẽ được thêm sau'; }
 });
 $('projects').addEventListener('mouseover', e => { const v = e.target.closest('.shot-btn')?.querySelector('video'); v?.play().catch(()=>{}); });
 $('projects').addEventListener('mouseout', e => { const v = e.target.closest('.shot-btn')?.querySelector('video'); if (v) v.pause(); });
@@ -538,7 +529,6 @@ $('cmps').innerHTML = BEFORE_AFTER.map((b,i) => `
       <div class="layer after">${layer(b.after,'Sau: '+b.title)}</div>
       <div class="layer before">${layer(b.before,'Trước: '+b.title)}</div>
       <div class="bar" aria-hidden="true"></div>
-      <span class="lb l">TRƯỚC</span><span class="lb r">SAU</span>
       <input type="range" id="cmp${i}" min="0" max="100" value="50" aria-label="So sánh trước và sau: ${esc(b.title)}">
     </div>
     <h3>${esc(b.title)}</h3>
