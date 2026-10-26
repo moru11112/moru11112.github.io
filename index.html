@@ -71,7 +71,8 @@ button{font:inherit;color:inherit}
 
 /* hero */
 .hero{position:relative}
-.cover{position:relative;height:clamp(300px,52vw,600px);overflow:hidden;background:var(--ph-b)}
+.cover{position:relative;height:clamp(300px,52vw,600px);overflow:hidden;background:var(--ph-b);container-type:size}
+.cover .yt-bg{position:absolute;top:50%;left:50%;width:max(100cqw,177.78cqh);height:max(100cqh,56.25cqw);transform:translate(-50%,-50%) scale(1.18);border:0;pointer-events:none}
 .cover video,.cover .cover-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .cover .cover-img{filter:blur(36px) saturate(1.1) brightness(.55);transform:scale(1.2)}
 .cover::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,11,12,.15) 0%,rgba(11,11,12,0) 35%,rgba(11,11,12,.75) 80%,var(--bg) 100%)}
@@ -148,7 +149,10 @@ button{font:inherit;color:inherit}
 @media (max-width:860px){.char{grid-template-columns:1fr}}
 .pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .stage{position:relative;aspect-ratio:4/5;max-width:100%;border-radius:var(--radius);overflow:hidden;background:radial-gradient(80% 60% at 50% 35%,#36383C,#0F1012 75%)}
-.stage model-viewer{position:absolute;inset:0;width:100%;height:100%;background:transparent;--poster-color:transparent;--progress-bar-color:var(--accent)}
+.stage canvas.gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:pan-y}
+.stage.drag canvas.gl{cursor:grab}
+.stage.drag canvas.gl:active{cursor:grabbing}
+.stage .loading{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;color:var(--muted);pointer-events:none}
 .stage .tag-l{position:absolute;left:10px;top:10px;font-family:var(--f-mono);font-size:11px;color:#E5E5E1;background:rgba(0,0,0,.5);padding:3px 8px;pointer-events:none;letter-spacing:.04em;border-radius:4px}
 .stage .hint{position:absolute;left:10px;bottom:10px;font-family:var(--f-mono);font-size:11px;color:#E5E5E1;background:rgba(0,0,0,.5);padding:3px 8px;pointer-events:none;border-radius:4px}
 .stage .empty{position:absolute;inset:0;display:grid;place-items:center}
@@ -284,6 +288,8 @@ footer{text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--mu
 /* =============== SỬA NỘI DUNG Ở ĐÂY =============== */
 // Video bìa: tải file .mp4 lên GitHub rồi ghi tên file, ví dụ "cover.mp4"
 const COVER_VIDEO = "";
+// Hoặc dùng video YouTube làm bìa (tự chạy, không tiếng, lặp lại)
+const COVER_YOUTUBE = "https://www.youtube.com/watch?v=oL5_Mvc0MYc";
 const AVATAR = "avatar.jpg";
 
 // Showreel: link YouTube. Để trống thì nút sẽ mở dự án đầu tiên có clip.
@@ -352,8 +358,11 @@ function playIn(box, item){
 }
 
 /* ---- hero ---- */
+const coverYT = ytId(COVER_YOUTUBE);
 $('cover').innerHTML = COVER_VIDEO
   ? `<video src="${esc(COVER_VIDEO)}" autoplay muted loop playsinline></video>`
+  : coverYT
+  ? `${AVATAR ? `<img class="cover-img" src="${esc(AVATAR)}" alt="">` : ''}<iframe class="yt-bg" src="https://www.youtube-nocookie.com/embed/${coverYT}?autoplay=1&mute=1&loop=1&playlist=${coverYT}&controls=0&rel=0&playsinline=1&disablekb=1&iv_load_policy=3" title="Video bìa" allow="autoplay; encrypted-media" tabindex="-1" aria-hidden="true"></iframe>`
   : `${AVATAR ? `<img class="cover-img" src="${esc(AVATAR)}" alt="">` : ''}<span class="cover-note">Video bìa đặt ở đây</span>`;
 $('avatar').innerHTML = AVATAR ? `<img src="${esc(AVATAR)}" alt="Ảnh đại diện Moru">` : '';
 const socialHTML = SOCIALS.map(([n,u]) => `<li><a href="${u ? esc(u) : '#lien-he'}" ${u ? 'target="_blank" rel="noopener"' : ''}>${esc(n)}</a></li>`).join('');
@@ -425,65 +434,157 @@ $('projects').addEventListener('click', e => {
 $('projects').addEventListener('mouseover', e => { const v = e.target.closest('.shot-btn')?.querySelector('video'); v?.play().catch(()=>{}); });
 $('projects').addEventListener('mouseout', e => { const v = e.target.closest('.shot-btn')?.querySelector('video'); if (v) v.pause(); });
 
-/* ---- 3D characters ---- */
+/* ---- 3D characters (three.js: render / clay / wireframe) ---- */
 const FIGURE = `<svg viewBox="0 0 60 100" aria-hidden="true"><g fill="none" stroke="#D9D9D5" stroke-width="1.2"><circle cx="30" cy="14" r="9"/><path d="M18 30h24l4 30M18 30l-4 30M22 30v34l-3 32M38 30v34l3 32M22 64h16"/><ellipse cx="30" cy="96" rx="20" ry="3"/></g></svg>`;
-const ANGLES = [["Trước","0deg 75deg"],["Phải","90deg 75deg"],["Sau","180deg 75deg"],["Trái","-90deg 75deg"],["Trên","0deg 15deg"],["Dưới","0deg 120deg"]];
+const ANGLES = [["Trước",0,75],["Phải",90,75],["Sau",180,75],["Trái",-90,75],["Trên",0,15],["Dưới",0,120]];
 $('chars').innerHTML = CHARACTERS.map((c,i) => {
-  const src = esc(c.model||'');
-  const left = c.model
-    ? `<model-viewer src="${src}" alt="Turntable ${esc(c.title)}" autoplay auto-rotate auto-rotate-delay="0" rotation-per-second="30deg" disable-zoom disable-pan disable-tap interaction-prompt="none" shadow-intensity="1" camera-orbit="0deg 75deg auto"></model-viewer>`
-    : `<div class="empty">${FIGURE}</div>`;
-  const right = c.model
-    ? `<model-viewer id="mv${i}" src="${src}" alt="${esc(c.title)}" camera-controls touch-action="pan-y" interaction-prompt="none" shadow-intensity="1" camera-orbit="0deg 75deg auto" interpolation-decay="120"></model-viewer><span class="hint">Kéo để xoay · cuộn để phóng to</span>`
-    : `<div class="empty">${FIGURE}</div><span class="hint">Chưa có model</span>`;
+  const empty = `<div class="empty">${FIGURE}</div>`;
   return `<article class="char rv">
     <div class="pair">
-      <div class="stage">${left}<span class="tag-l">Turntable</span></div>
-      <div class="stage">${right}<span class="tag-l">Xem từng góc</span></div>
+      <div class="stage" id="tt${i}">${c.model ? '<span class="loading">Đang tải mô hình…</span>' : empty}<span class="tag-l">Turntable</span></div>
+      <div class="stage drag" id="vw${i}">${c.model ? '<span class="loading">Đang tải mô hình…</span><span class="hint">Kéo để xoay · cuộn để phóng to</span>' : empty + '<span class="hint">Chưa có model</span>'}<span class="tag-l">Xem từng góc</span></div>
     </div>
     <div class="info">
       <div><h3>${esc(c.title)}</h3><p style="margin-top:6px">${esc(c.desc||'')}</p></div>
-      ${c.model ? `<div><div class="lbl">Góc nhìn</div><div class="chips angles" data-mv="mv${i}">${ANGLES.map(([n,o],k)=>`<button type="button" data-orbit="${o}" aria-pressed="${k===0}">${n}</button>`).join('')}</div></div>
-      <div><div class="lbl">Chế độ hiển thị</div><div class="seg modes" data-mv="mv${i}"><button type="button" data-mode="render" aria-pressed="true">Render</button><button type="button" data-mode="clay" aria-pressed="false">Clay</button></div></div>` : ''}
+      ${c.model ? `<div><div class="lbl">Chế độ hiển thị</div><div class="seg modes" data-i="${i}"><button type="button" data-mode="render" aria-pressed="true">Render</button><button type="button" data-mode="clay" aria-pressed="false">Clay</button><button type="button" data-mode="wire" aria-pressed="false">Lưới</button></div></div>
+      <div><div class="lbl">Góc nhìn</div><div class="chips angles" data-i="${i}">${ANGLES.map(([n,az,po],k)=>`<button type="button" data-az="${az}" data-po="${po}" aria-pressed="${k===0}">${n}</button>`).join('')}</div></div>` : ''}
       ${c.tools ? `<div><div class="lbl">Phần mềm</div><p>${esc(c.tools)}</p></div>` : ''}
       ${c.credit ? `<div class="credit">${esc(c.credit)}</div>` : ''}
     </div>
   </article>`;
 }).join('');
+
+const viewers = {};   // i -> {tt, vw}
+function loadScript(src){ return new Promise((ok, bad) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = bad; document.head.appendChild(s); }); }
+const THREE_BASE = 'https://cdn.jsdelivr.net/npm/three@0.147.0/';
+let threeReady = null;
+function getThree(){
+  if (!threeReady) threeReady = loadScript(THREE_BASE + 'build/three.min.js')
+    .then(() => Promise.all([loadScript(THREE_BASE + 'examples/js/loaders/GLTFLoader.js'), loadScript(THREE_BASE + 'examples/js/controls/OrbitControls.js')]));
+  return threeReady;
+}
+const gltfCache = {};
+function loadGLTF(url){ return gltfCache[url] || (gltfCache[url] = new Promise((ok, bad) => new THREE.GLTFLoader().load(url, ok, undefined, bad))); }
+
+function makeViewer(el, url, {turntable}){
+  const T = THREE;
+  const renderer = new T.WebGLRenderer({antialias:true, alpha:true});
+  renderer.outputEncoding = T.sRGBEncoding;
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.domElement.className = 'gl';
+  el.prepend(renderer.domElement);
+  const scene = new T.Scene();
+  const camera = new T.PerspectiveCamera(32, 1, 0.01, 1000);
+  scene.add(new T.HemisphereLight(0xffffff, 0x3a3a40, 1.1));
+  const key = new T.DirectionalLight(0xffffff, 1.6); key.position.set(3, 5, 4); scene.add(key);
+  const rim = new T.DirectionalLight(0xF0703C, 0.9); rim.position.set(-4, 3, -4); scene.add(rim);
+  const controls = new T.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.enablePan = false;
+  if (turntable) { controls.enabled = false; controls.autoRotate = true; controls.autoRotateSpeed = reduce ? 0 : 2.4; }
+  const clock = new T.Clock();
+  const v = {renderer, scene, camera, controls, mixer:null, model:null, meshes:[], mode:'render', anim:null, dist:5, visible:true};
+  const clayMat = new T.MeshStandardMaterial({color:0xC9C7C2, roughness:.85, metalness:0});
+  const darkMat = new T.MeshStandardMaterial({color:0x2A2B2E, roughness:.9, metalness:0, polygonOffset:true, polygonOffsetFactor:1, polygonOffsetUnits:1});
+  const wireMat = new T.MeshBasicMaterial({color:0xF0703C, wireframe:true, transparent:true, opacity:.85});
+
+  function size(){
+    const w = el.clientWidth, h = el.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(size).observe(el); size();
+
+  loadGLTF(url).then(gltf => {
+    // each viewer needs its own copy (skinned meshes must be cloned with their skeleton)
+    const model = T.SkeletonUtils ? T.SkeletonUtils.clone(gltf.scene) : cloneSkinned(gltf.scene);
+    scene.add(model); v.model = model;
+    model.traverse(o => { if (o.isMesh) { o.userData.orig = o.material; v.meshes.push(o); } });
+    const box = new T.Box3().setFromObject(model), sz = box.getSize(new T.Vector3()), ctr = box.getCenter(new T.Vector3());
+    model.position.sub(ctr);
+    const r = sz.length() / 2;
+    v.dist = r / Math.sin(T.MathUtils.degToRad(camera.fov / 2)) * 0.95;
+    controls.minDistance = v.dist * 0.35; controls.maxDistance = v.dist * 2.5;
+    setAngle(v, 0, 75, true);
+    if (gltf.animations.length) {
+      v.mixer = new T.AnimationMixer(model);
+      const clip = gltf.animations.find(a => /idle/i.test(a.name)) || gltf.animations[0];
+      v.mixer.clipAction(clip).play();
+    }
+    el.querySelector('.loading')?.remove();
+    setMode(v, v.mode);
+  }).catch(() => { const l = el.querySelector('.loading'); if (l) l.textContent = 'Không tải được mô hình'; });
+
+  new IntersectionObserver(es => { v.visible = es[0].isIntersecting; }).observe(el);
+  (function loop(){
+    requestAnimationFrame(loop);
+    const dt = clock.getDelta();
+    if (!v.visible || document.hidden) return;
+    if (v.mixer && !reduce) v.mixer.update(dt);
+    if (v.anim) {
+      const t = Math.min(1, (performance.now() - v.anim.t0) / 650), e = 1 - Math.pow(1 - t, 3);
+      camera.position.lerpVectors(v.anim.from, v.anim.to, e);
+      if (t >= 1) v.anim = null;
+    }
+    controls.update();
+    renderer.autoClear = true;
+    if (v.mode === 'wire') {
+      scene.overrideMaterial = null; renderer.render(scene, camera);
+      renderer.autoClear = false; scene.overrideMaterial = wireMat; renderer.render(scene, camera); scene.overrideMaterial = null;
+    } else renderer.render(scene, camera);
+  })();
+  v.clay = clayMat; v.dark = darkMat;
+  return v;
+}
+function cloneSkinned(src){
+  // minimal SkeletonUtils.clone for r147 non-module builds
+  const clone = src.clone(true);
+  const srcBones = {}, cloneBones = {};
+  src.traverse(o => { if (o.isBone) srcBones[o.name] = o; });
+  clone.traverse(o => { if (o.isBone) cloneBones[o.name] = o; });
+  const srcMeshes = []; src.traverse(o => { if (o.isSkinnedMesh) srcMeshes.push(o); });
+  let k = 0;
+  clone.traverse(o => {
+    if (!o.isSkinnedMesh) return;
+    const s = srcMeshes[k++];
+    const bones = s.skeleton.bones.map(b => cloneBones[b.name]);
+    o.bind(new THREE.Skeleton(bones, s.skeleton.boneInverses), s.bindMatrix);
+  });
+  return clone;
+}
+function setMode(v, mode){
+  v.mode = mode;
+  v.meshes.forEach(m => { m.material = mode === 'render' ? m.userData.orig : mode === 'clay' ? v.clay : v.dark; });
+}
+function setAngle(v, az, po, jump){
+  const T = THREE, r = v.camera.position.length() > 0.001 && !jump ? v.camera.position.distanceTo(v.controls.target) : v.dist;
+  const th = T.MathUtils.degToRad(az), ph = T.MathUtils.degToRad(po);
+  const to = new T.Vector3(r * Math.sin(ph) * Math.sin(th), r * Math.cos(ph), r * Math.sin(ph) * Math.cos(th));
+  if (jump || reduce) { v.camera.position.copy(to); v.camera.lookAt(0,0,0); v.anim = null; }
+  else v.anim = {from: v.camera.position.clone(), to, t0: performance.now()};
+}
+
+if (CHARACTERS.some(c => c.model)) {
+  getThree().then(() => {
+    CHARACTERS.forEach((c,i) => {
+      if (!c.model) return;
+      viewers[i] = { tt: makeViewer($('tt'+i), c.model, {turntable:true}), vw: makeViewer($('vw'+i), c.model, {turntable:false}) };
+    });
+  }).catch(() => document.querySelectorAll('.stage .loading').forEach(l => l.textContent = 'Không tải được trình xem 3D'));
+}
 $('chars').addEventListener('click', e => {
   const a = e.target.closest('.angles button');
   if (a) {
-    const mv = $(a.parentElement.dataset.mv); if (!mv) return;
-    mv.cameraOrbit = a.dataset.orbit + ' auto';
+    const v = viewers[a.parentElement.dataset.i]?.vw; if (!v) return;
+    setAngle(v, +a.dataset.az, +a.dataset.po);
     a.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === a));
     return;
   }
   const m = e.target.closest('.modes button');
   if (m) {
-    const mv = $(m.parentElement.dataset.mv); if (!mv) return;
-    setClay(mv, m.dataset.mode === 'clay');
+    const pair = viewers[m.parentElement.dataset.i]; if (!pair) return;
+    setMode(pair.tt, m.dataset.mode); setMode(pair.vw, m.dataset.mode);
     m.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === m));
   }
 });
-function setClay(mv, on){
-  const mats = mv.model?.materials; if (!mats) return;
-  if (!mv._orig) mv._orig = mats.map(mt => {
-    const p = mt.pbrMetallicRoughness;
-    return {c:[...p.baseColorFactor], t:p.baseColorTexture?.texture || null, m:p.metallicFactor, r:p.roughnessFactor};
-  });
-  mats.forEach((mt,k) => {
-    const p = mt.pbrMetallicRoughness, o = mv._orig[k];
-    try {
-      if (on) { p.setBaseColorFactor([0.78,0.77,0.75,1]); p.baseColorTexture?.setTexture(null); p.setMetallicFactor(0); p.setRoughnessFactor(0.85); }
-      else { p.setBaseColorFactor(o.c); p.baseColorTexture?.setTexture(o.t); p.setMetallicFactor(o.m); p.setRoughnessFactor(o.r); }
-    } catch(err) {}
-  });
-}
-if (CHARACTERS.some(c => c.model)) {
-  const s = document.createElement('script'); s.type = 'module';
-  s.src = 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js';
-  document.head.appendChild(s);
-}
 
 /* ---- before / after ---- */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
