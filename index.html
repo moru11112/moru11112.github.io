@@ -67,7 +67,7 @@ button{font:inherit;color:inherit}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .top .wrap{display:flex;align-items:center;gap:20px;height:60px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-.brand img{width:30px;height:30px;border-radius:50%;object-fit:cover;border:1.5px solid var(--accent)}
+.brand img,.brand .brand-av{width:30px;height:30px;border-radius:50%;object-fit:cover;border:1.5px solid var(--accent)}
 .nav{display:flex;gap:22px;margin-left:auto}
 .nav a{text-decoration:none;color:var(--muted);font-size:14px}
 .nav a:hover{color:var(--fg)}
@@ -89,7 +89,7 @@ button{font:inherit;color:inherit}
 .cover-note{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:16px;z-index:1;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#CFCFCB;background:rgba(0,0,0,.45);padding:4px 9px}
 .hero-info{position:relative;z-index:2;margin-top:-150px;display:flex;align-items:flex-end;gap:28px;flex-wrap:wrap}
 .avatar{width:132px;height:132px;border-radius:50%;flex:none;overflow:hidden;border:3px solid var(--accent);box-shadow:0 0 0 6px var(--bg);background:linear-gradient(150deg,#3A3B3E,#121314)}
-.avatar img{width:100%;height:100%;object-fit:cover}
+.avatar img,.avatar video{width:100%;height:100%;object-fit:cover;display:block}
 .who{flex:1 1 300px;min-width:0}
 .name{margin:0;font-size:clamp(44px,8vw,84px);font-weight:700;letter-spacing:-.03em;line-height:1}
 .role{margin:10px 0 0;font-family:var(--f-mono);color:var(--accent);font-size:15px}
@@ -303,6 +303,8 @@ const COVER_VIDEO = "";
 // Hoặc dùng video YouTube làm bìa (tự chạy, không tiếng, lặp lại)
 const COVER_YOUTUBE = "https://www.youtube.com/watch?v=oL5_Mvc0MYc";
 const AVATAR = "avatar.jpg";
+// Avatar động: file .mp4 (để trống thì dùng ảnh AVATAR)
+const AVATAR_VIDEO = "avatar.mp4";
 
 // Showreel: link YouTube. Để trống thì nút sẽ mở dự án đầu tiên có clip.
 const SHOWREEL = "";
@@ -378,6 +380,12 @@ $('cover').innerHTML = COVER_VIDEO
   ? `${AVATAR ? `<img class="cover-img" src="${esc(AVATAR)}" alt="">` : ''}<iframe class="yt-bg" src="https://www.youtube-nocookie.com/embed/${coverYT}?autoplay=1&mute=1&loop=1&playlist=${coverYT}&controls=0&rel=0&playsinline=1&disablekb=1&iv_load_policy=3" title="Video bìa" allow="autoplay; encrypted-media" tabindex="-1" aria-hidden="true"></iframe>`
   : `${AVATAR ? `<img class="cover-img" src="${esc(AVATAR)}" alt="">` : ''}<span class="cover-note">Video bìa đặt ở đây</span>`;
 $('avatar').innerHTML = AVATAR ? `<img src="${esc(AVATAR)}" alt="Ảnh đại diện Moru">` : '';
+if (AVATAR_VIDEO) {
+  const vid = cls => `<video ${cls} src="${esc(AVATAR_VIDEO)}" poster="${esc(AVATAR)}" autoplay muted loop playsinline preload="auto" aria-label="Avatar Moru"></video>`;
+  $('avatar').innerHTML = vid('');
+  const bi = $('brandAvatar'); if (bi) { bi.insertAdjacentHTML('afterend', vid('class="brand-av"')); bi.remove(); }
+  if (reduce) document.querySelectorAll('#avatar video, .brand-av').forEach(v => { v.removeAttribute('autoplay'); v.pause(); });
+}
 const socialHTML = SOCIALS.map(([n,u]) => `<li><a href="${u ? esc(u) : '#lien-he'}" ${u ? 'target="_blank" rel="noopener"' : ''}>${esc(n)}</a></li>`).join('');
 $('socials1').innerHTML = socialHTML; $('socials2').innerHTML = socialHTML;
 const reelTarget = SHOWREEL ? {title:'Showreel', youtube:SHOWREEL} : PROJECTS.find(p => ytId(p.youtube) || p.video);
