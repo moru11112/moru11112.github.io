@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Portfolio VFX Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a dark grading-suite page. A cinemascope viewer opens it, then shot cards, a before/after breakdown, a node-graph pipeline, a film slate and contact. */
+:root{
+  --bg:#0D1014;
+  --panel:#141920;
+  --raise:#1B212A;
+  --line:#28303B;
+  --fg:#ECE9E3;
+  --muted:#8E97A4;
+  --accent:#F2A33A;      /* tungsten 3200K */
+  --accent-ink:#1A1206;
+  --key:#3FAE5A;         /* chroma green, only inside the breakdown */
+  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --step--1:.8125rem; --step-0:1rem; --step-1:1.25rem; --step-2:1.75rem; --step-3:clamp(2rem,4.5vw,3.25rem);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:var(--step-0);line-height:1.6;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mono{font-family:var(--f-mono);font-size:var(--step--1);letter-spacing:.06em}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.02}
+
+/* ---------- header ---------- */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:24px;min-height:60px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--f-display);font-weight:800;font-variation-settings:"wdth" 80;text-transform:uppercase;letter-spacing:.04em}
+.brand-mark{width:18px;height:18px;position:relative}
+.brand-mark::before,.brand-mark::after{content:"";position:absolute;inset:0;border:2px solid var(--accent)}
+.brand-mark::before{clip-path:polygon(0 0,40% 0,40% 2px,2px 2px,2px 40%,0 40%,0 100%,40% 100%,40% calc(100% - 2px),2px calc(100% - 2px),2px 60%,0 60%)}
+.brand-mark::after{clip-path:polygon(60% 0,100% 0,100% 100%,60% 100%,60% calc(100% - 2px),calc(100% - 2px) calc(100% - 2px),calc(100% - 2px) 2px,60% 2px)}
+.nav{display:flex;gap:22px;margin-left:auto}
+.nav a{text-decoration:none;color:var(--muted);font-size:.9375rem}
+.nav a:hover{color:var(--fg)}
+.status{display:inline-flex;align-items:center;gap:8px;color:var(--fg);white-space:nowrap}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 22%,transparent)}
+@media (max-width:820px){.nav{display:none}.status{margin-left:auto}}
+
+/* ---------- hero ---------- */
+.hero{padding-block:48px 28px;display:grid;gap:28px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px 28px;color:var(--muted)}
+.hero-meta b{color:var(--accent);font-weight:500}
+.hero-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px;align-items:end}
+.name{font-size:clamp(3.4rem,10.5vw,8.75rem);font-weight:850;font-variation-settings:"wdth" 68;text-transform:uppercase;letter-spacing:-.01em;line-height:.88}
+.name span{color:var(--accent)}
+.lede{color:#C9CDD3;font-size:var(--step-1);line-height:1.5;max-width:34ch;margin:0 0 18px}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:12px 18px;font-weight:600;text-decoration:none;border:1px solid var(--line);border-radius:3px;font-size:.9375rem;background:none;color:var(--fg);cursor:pointer;font-family:inherit}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:hover{border-color:var(--fg)}
+.btn.primary:hover{filter:brightness(1.08);border-color:var(--accent)}
+@media (max-width:820px){.hero-row{grid-template-columns:1fr}}
+
+.viewer{position:relative;margin:0;aspect-ratio:2.39/1;max-width:100%;background:#0A0C10;border:1px solid var(--line);overflow:hidden}
+@media (max-width:640px){.viewer{aspect-ratio:16/10}}
+.viewer canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.safe{position:absolute;border:1px dashed rgba(236,233,227,.16);pointer-events:none}
+.safe.action{inset:5%}
+.safe.title{inset:10%}
+.hud{position:absolute;color:#C9CDD3;font-family:var(--f-mono);font-size:.75rem;letter-spacing:.08em;display:flex;align-items:center;gap:8px}
+.hud.tl{top:14px;left:16px}.hud.tr{top:14px;right:16px}.hud.bl{bottom:14px;left:16px;color:var(--accent);font-variant-numeric:tabular-nums}.hud.br{bottom:14px;right:16px}
+.hud .dot{width:7px;height:7px;border-radius:50%;background:#E5484D}
+.slot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:0 16px}
+.play{width:64px;height:64px;border-radius:50%;border:1.5px solid rgba(236,233,227,.7);display:grid;place-items:center;background:rgba(13,16,20,.55);backdrop-filter:blur(4px)}
+.play svg{width:20px;height:20px;margin-left:4px;fill:var(--fg)}
+.slot span{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.1em;color:#C9CDD3;background:rgba(13,16,20,.6);padding:4px 10px;text-transform:uppercase}
+@media (max-width:640px){.hud.tr,.hud.br{display:none}.safe{display:none}}
+
+/* ---------- sections ---------- */
+.section{padding-block:72px 8px}
+.sec-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 40px;align-items:end;margin-bottom:32px;border-top:1px solid var(--line);padding-top:20px}
+.eyebrow{color:var(--accent);grid-column:1/-1}
+.sec-head h2{font-size:var(--step-3);font-weight:800;font-variation-settings:"wdth" 75;text-transform:uppercase}
+.sec-head p{margin:0;color:var(--muted);max-width:52ch}
+@media (max-width:820px){.sec-head{grid-template-columns:1fr}}
+
+/* projects */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px 22px}
+@media (max-width:960px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.grid{grid-template-columns:1fr}}
+.card{display:flex;flex-direction:column;gap:14px;min-width:0}
+.thumb{position:relative;aspect-ratio:16/9;max-width:100%;overflow:hidden;border:1px solid var(--line);
+  background:
+    radial-gradient(110% 90% at 72% 28%,hsl(var(--h) 65% 52% / .55),transparent 58%),
+    radial-gradient(70% 60% at 18% 90%,hsl(calc(var(--h) + 50) 60% 40% / .35),transparent 60%),
+    linear-gradient(160deg,hsl(var(--h) 35% 17%),hsl(calc(var(--h) + 30) 30% 7%));
+  transition:transform .4s ease}
+.thumb::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    linear-gradient(90deg,transparent calc(33.33% - .5px),rgba(255,255,255,.12) calc(33.33% - .5px),rgba(255,255,255,.12) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(255,255,255,.12) calc(66.66% - .5px),rgba(255,255,255,.12) calc(66.66% + .5px),transparent calc(66.66% + .5px)),
+    linear-gradient(180deg,transparent calc(33.33% - .5px),rgba(255,255,255,.12) calc(33.33% - .5px),rgba(255,255,255,.12) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(255,255,255,.12) calc(66.66% - .5px),rgba(255,255,255,.12) calc(66.66% + .5px),transparent calc(66.66% + .5px))}
+.thumb video,.thumb iframe{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:cover}
+.thumb.has-media::after{display:none}
+.thumb-tag,.thumb-tc{position:absolute;font-family:var(--f-mono);font-size:.6875rem;letter-spacing:.08em;padding:3px 7px;background:rgba(10,12,16,.7);z-index:1}
+.thumb-tag{top:10px;left:10px;color:var(--accent)}
+.thumb-tc{bottom:10px;right:10px;color:#C9CDD3;font-variant-numeric:tabular-nums}
+.card:hover .thumb{transform:translateY(-3px)}
+@media (prefers-reduced-motion:reduce){.thumb{transition:none}.card:hover .thumb{transform:none}}
+.card-top{display:flex;justify-content:space-between;color:var(--muted)}
+.card h3{font-size:var(--step-2);font-weight:750;font-variation-settings:"wdth" 82;margin-top:4px}
+.card p{margin:0;color:#C2C7CE;font-size:.9375rem}
+.specs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:2px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+.specs div{min-width:0}
+.specs dt{color:var(--muted);font-size:.6875rem;text-transform:uppercase}
+.specs dd{margin:0;color:var(--fg);font-size:.8125rem;letter-spacing:.02em;overflow-wrap:anywhere}
+
+/* breakdown */
+.compare{position:relative;aspect-ratio:16/9;max-width:100%;border:1px solid var(--line);overflow:hidden;--pos:50%;user-select:none;touch-action:pan-y}
+.compare canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.compare .before{clip-path:inset(0 calc(100% - var(--pos)) 0 0)}
+.divider{position:absolute;top:0;bottom:0;left:var(--pos);width:2px;margin-left:-1px;background:var(--fg);pointer-events:none}
+.divider::after{content:"";position:absolute;top:50%;left:50%;width:40px;height:40px;transform:translate(-50%,-50%);border-radius:50%;background:var(--bg);border:2px solid var(--fg);
+  background-image:linear-gradient(var(--fg),var(--fg)),linear-gradient(var(--fg),var(--fg));background-size:2px 12px;background-position:14px center,20px center;background-repeat:no-repeat}
+.compare input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize}
+.compare:has(input:focus-visible) .divider::after{outline:2px solid var(--accent);outline-offset:3px}
+.cmp-label{position:absolute;top:12px;padding:4px 9px;background:rgba(10,12,16,.72);color:var(--fg);pointer-events:none}
+.cmp-label.l{left:12px}.cmp-label.r{right:12px;color:var(--accent)}
+.passes{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:16px 0 0;padding:0}
+.passes li{border:1px solid var(--line);padding:5px 10px;color:#C2C7CE}
+.passes li b{color:var(--accent);font-weight:500;margin-right:6px}
+
+/* pipeline as node graph */
+.pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px;list-style:none;margin:0;padding:0;position:relative}
+.node{position:relative;background:var(--panel);border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.node::before{content:"";position:absolute;top:-5px;left:50%;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:var(--bg);border:1.5px solid var(--muted)}
+.node::after{content:"";position:absolute;top:28px;right:-19px;width:18px;height:1.5px;background:var(--accent)}
+.node:last-child::after{display:none}
+.node-id{display:flex;justify-content:space-between;color:var(--accent)}
+.node-id span:last-child{color:var(--muted)}
+.node h3{font-size:1.25rem;font-weight:750;font-variation-settings:"wdth" 82}
+.node p{margin:0;color:#BCC2CA;font-size:.875rem;line-height:1.55}
+@media (max-width:960px){
+  .pipe{grid-template-columns:1fr;gap:18px}
+  .node::after{top:auto;bottom:-19px;right:auto;left:28px;width:1.5px;height:18px}
+}
+
+/* tools */
+.tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 40px;list-style:none;margin:0;padding:0}
+.tool{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:16px;align-items:center;padding-block:16px;border-bottom:1px solid var(--line)}
+.tool-code{width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--line);font-family:var(--f-display);font-weight:800;font-variation-settings:"wdth" 90;font-size:1.0625rem;color:var(--accent);background:var(--panel)}
+.tool strong{display:block;font-weight:600}
+.tool small{color:var(--muted);font-size:.875rem}
+.freq{color:var(--muted);white-space:nowrap}
+.freq.daily{color:var(--accent)}
+@media (max-width:760px){.tools{grid-template-columns:1fr}}
+
+/* about + slate */
+.about{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:48px;align-items:start}
+.about-text p{margin:0 0 16px;color:#CDD1D6;max-width:60ch}
+.about-text p:first-child{font-size:var(--step-1);color:var(--fg);line-height:1.5}
+.slate{background:#111418;border:1px solid var(--line);max-width:100%}
+.slate-bar{height:34px;background:repeating-linear-gradient(-45deg,var(--fg) 0 22px,#111418 22px 44px);border-bottom:2px solid var(--fg)}
+.slate-grid{display:grid;grid-template-columns:1fr 1fr}
+.slate-cell{padding:12px 16px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}
+.slate-cell:nth-child(2n){border-right:0}
+.slate-cell.wide{grid-column:1/-1;border-right:0}
+.slate-cell dt{font-family:var(--f-mono);font-size:.6875rem;letter-spacing:.1em;color:var(--muted)}
+.slate-cell dd{margin:2px 0 0;font-family:var(--f-display);font-weight:700;font-variation-settings:"wdth" 80;font-size:1.375rem;text-transform:uppercase;line-height:1.15;overflow-wrap:anywhere}
+.slate-cell dd.on{color:var(--accent)}
+@media (max-width:820px){.about{grid-template-columns:1fr}}
+
+/* contact */
+.contact{padding-block:88px 56px}
+.contact h2{font-size:clamp(2.5rem,7vw,5.5rem);font-weight:850;font-variation-settings:"wdth" 68;text-transform:uppercase;line-height:.92;max-width:14ch}
+.mail{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;margin:28px 0 24px}
+.mail-addr{font-family:var(--f-mono);font-size:clamp(1rem,2.6vw,1.375rem);color:var(--accent);user-select:all;overflow-wrap:anywhere;min-width:0}
+.socials{display:flex;flex-wrap:wrap;gap:10px;list-style:none;margin:0;padding:0}
+.socials a{display:inline-block;padding:8px 14px;border:1px solid var(--line);text-decoration:none;font-size:.9375rem}
+.socials a:hover{border-color:var(--fg)}
+footer{border-top:1px solid var(--line)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;padding-block:20px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span>Tên Của Bạn</a>
+    <nav class="nav" aria-label="Mục lục">
+      <a href="#du-an">Dự án</a>
+      <a href="#breakdown">Breakdown</a>
+      <a href="#quy-trinh">Quy trình</a>
+      <a href="#gioi-thieu">Giới thiệu</a>
+      <a href="#lien-he">Liên hệ</a>
+    </nav>
+    <span class="status mono"><i aria-hidden="true"></i>Đang nhận dự án</span>
+  </div>
+</header>
+
+<main>
+  <section class="hero wrap" id="top">
+    <div class="hero-meta mono">
+      <span><b>VFX EDITOR</b> · COMPOSITOR</span>
+      <span>THÀNH PHỐ CỦA BẠN</span>
+      <span>MV · QUẢNG CÁO · PHIM NGẮN</span>
+    </div>
+    <div class="hero-row">
+      <h1 class="name">Tên<br>Của Bạn<span>.</span></h1>
+      <div>
+        <p class="lede">Mình ghép, xoá và dựng lại những thứ máy quay không ghi được. Compositing, roto, tracking và set extension cho MV, quảng cáo và phim ngắn.</p>
+        <div class="cta">
+          <a class="btn primary" href="#du-an">Xem dự án</a>
+          <a class="btn" href="#lien-he">Liên hệ làm việc</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHOWREEL: khi có clip, thay toàn bộ <figure> này bằng
+         <div class="viewer"><iframe src="https://www.youtube.com/embed/MÃ_VIDEO" style="position:absolute;inset:0;width:100%;height:100%;border:0" allowfullscreen></iframe></div> -->
+    <figure class="viewer" id="viewer">
+      <canvas id="trackCv" aria-hidden="true"></canvas>
+      <span class="safe action" aria-hidden="true"></span>
+      <span class="safe title" aria-hidden="true"></span>
+      <div class="hud tl">SHOWREEL 2026</div>
+      <div class="hud tr"><span class="dot" aria-hidden="true"></span>CAMERA TRACK · 9 ĐIỂM</div>
+      <div class="hud bl" id="viewerTc">00:00:00:00</div>
+      <div class="hud br">2.39:1 · 24 FPS</div>
+      <div class="slot">
+        <div class="play" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M3 1.5v17l15-8.5z"/></svg></div>
+        <span>Showreel của bạn sẽ đặt ở đây</span>
+      </div>
+    </figure>
+  </section>
+
+  <section class="section wrap" id="du-an">
+    <div class="sec-head">
+      <span class="eyebrow mono">DỰ ÁN</span>
+      <h2>Shot đã hoàn thành</h2>
+      <p>Một số dự án compositing và clean-up gần đây, từ MV ca nhạc đến phim ngắn độc lập.</p>
+    </div>
+    <div class="grid" id="projectGrid"></div>
+  </section>
+
+  <section class="section wrap" id="breakdown">
+    <div class="sec-head">
+      <span class="eyebrow mono">BREAKDOWN</span>
+      <h2>Trước và sau</h2>
+      <p>Kéo thanh trượt để so sánh plate gốc quay phông xanh với khung hình đã compositing.</p>
+    </div>
+    <div class="compare" id="compare">
+      <canvas id="afterCv" aria-hidden="true"></canvas>
+      <canvas id="beforeCv" class="before" aria-hidden="true"></canvas>
+      <div class="divider" aria-hidden="true"></div>
+      <span class="cmp-label l mono">PLATE GỐC</span>
+      <span class="cmp-label r mono">COMP CUỐI</span>
+      <input type="range" id="cmpRange" min="0" max="100" value="50" aria-label="Kéo để so sánh plate gốc và bản compositing">
+    </div>
+    <ul class="passes mono" aria-label="Các bước đã làm trong shot này">
+      <li><b>01</b>Keying phông xanh</li>
+      <li><b>02</b>Roto tóc và viền</li>
+      <li><b>03</b>Thay bầu trời</li>
+      <li><b>04</b>Set extension thành phố</li>
+      <li><b>05</b>Light wrap và rim light</li>
+      <li><b>06</b>Khớp grain</li>
+    </ul>
+  </section>
+
+  <section class="section wrap" id="quy-trinh">
+    <div class="sec-head">
+      <span class="eyebrow mono">QUY TRÌNH</span>
+      <h2>Từ plate đến bản giao</h2>
+      <p>Mỗi shot đi qua cùng một chuỗi node. Bạn biết trước mình đang ở bước nào và khi nào có bản review.</p>
+    </div>
+    <ol class="pipe">
+      <li class="node"><div class="node-id mono"><span>Tracker1</span><span>01</span></div><h3>Tracking</h3><p>Ổn định plate, track camera 2D hoặc 3D để mọi thứ thêm vào bám đúng chuyển động.</p></li>
+      <li class="node"><div class="node-id mono"><span>Keyer1</span><span>02</span></div><h3>Roto &amp; Key</h3><p>Tách nhân vật khỏi phông xanh, roto tay phần tóc và vật chuyển động nhanh.</p></li>
+      <li class="node"><div class="node-id mono"><span>Merge1</span><span>03</span></div><h3>Compositing</h3><p>Ghép nền, CG và hiệu ứng. Khớp ánh sáng, độ sâu trường ảnh và light wrap.</p></li>
+      <li class="node"><div class="node-id mono"><span>Grade1</span><span>04</span></div><h3>Màu &amp; Grain</h3><p>Khớp màu từng lớp với plate, thêm lại grain và đặc tính ống kính để khung hình liền mạch.</p></li>
+      <li class="node"><div class="node-id mono"><span>Write1</span><span>05</span></div><h3>Review &amp; Xuất</h3><p>Gửi bản review theo từng version, sửa theo note và xuất đúng định dạng giao nộp.</p></li>
+    </ol>
+  </section>
+
+  <section class="section wrap" id="phan-mem">
+    <div class="sec-head">
+      <span class="eyebrow mono">PHẦN MỀM</span>
+      <h2>Công cụ hằng ngày</h2>
+      <p>Phần mềm mình dùng và mức độ sử dụng thực tế trong công việc.</p>
+    </div>
+    <ul class="tools">
+      <li class="tool"><span class="tool-code">Ae</span><span><strong>After Effects</strong><small>Compositing, motion, particle</small></span><span class="freq daily mono">HẰNG NGÀY</span></li>
+      <li class="tool"><span class="tool-code">Nk</span><span><strong>Nuke</strong><small>Compositing theo node, clean-up</small></span><span class="freq daily mono">HẰNG NGÀY</span></li>
+      <li class="tool"><span class="tool-code">Mo</span><span><strong>Mocha Pro</strong><small>Planar tracking, xoá vật thể</small></span><span class="freq mono">THƯỜNG XUYÊN</span></li>
+      <li class="tool"><span class="tool-code">Dr</span><span><strong>DaVinci Resolve</strong><small>Chỉnh màu, Fusion</small></span><span class="freq mono">THƯỜNG XUYÊN</span></li>
+      <li class="tool"><span class="tool-code">Bl</span><span><strong>Blender</strong><small>CG đơn giản, set extension</small></span><span class="freq mono">CƠ BẢN</span></li>
+      <li class="tool"><span class="tool-code">Pr</span><span><strong>Premiere Pro</strong><small>Dựng bản review, xuất file</small></span><span class="freq mono">THƯỜNG XUYÊN</span></li>
+    </ul>
+  </section>
+
+  <section class="section wrap" id="gioi-thieu">
+    <div class="sec-head">
+      <span class="eyebrow mono">GIỚI THIỆU</span>
+      <h2>Người đứng sau shot</h2>
+      <p>Vài dòng về mình và cách mình làm việc.</p>
+    </div>
+    <div class="about">
+      <div class="about-text">
+        <p>Mình là VFX editor chuyên compositing, bắt đầu từ việc tự học After Effects để làm hiệu ứng cho clip của bạn bè.</p>
+        <p>Hiện mình nhận các dự án MV, quảng cáo và phim ngắn, chủ yếu là thay nền, xoá vật thể, set extension và ghép CG vào cảnh quay thật. Mình thích những shot mà người xem không nhận ra là có VFX.</p>
+        <p>Mình làm việc từ xa hoặc tại studio, gửi bản review đều đặn và luôn giao file đúng định dạng đội hậu kỳ cần.</p>
+      </div>
+      <dl class="slate" aria-label="Thông tin nhanh">
+        <div class="slate-bar" aria-hidden="true"></div>
+        <div class="slate-grid">
+          <div class="slate-cell wide"><dt>TÊN</dt><dd>Tên Của Bạn</dd></div>
+          <div class="slate-cell"><dt>VAI TRÒ</dt><dd>Compositor</dd></div>
+          <div class="slate-cell"><dt>KINH NGHIỆM</dt><dd>3 năm</dd></div>
+          <div class="slate-cell"><dt>SHOT ĐÃ GIAO</dt><dd>600+</dd></div>
+          <div class="slate-cell"><dt>LÀM VIỆC</dt><dd>Từ xa / Studio</dd></div>
+          <div class="slate-cell wide"><dt>TRẠNG THÁI</dt><dd class="on">Đang nhận dự án</dd></div>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="contact wrap" id="lien-he">
+    <span class="eyebrow mono" style="color:var(--accent)">LIÊN HỆ</span>
+    <h2>Có cảnh quay cần xử lý?</h2>
+    <div class="mail">
+      <span class="mail-addr" id="mailAddr">email.cua.ban@gmail.com</span>
+      <button class="btn" type="button" id="copyBtn">Sao chép email</button>
+    </div>
+    <ul class="socials">
+      <li><a href="#" rel="noopener">Vimeo</a></li>
+      <li><a href="#" rel="noopener">YouTube</a></li>
+      <li><a href="#" rel="noopener">Instagram</a></li>
+      <li><a href="#" rel="noopener">Behance</a></li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap mono"><span>© 2026 TÊN CỦA BẠN</span><span>VFX EDITOR · COMPOSITOR</span></div>
+</footer>
+
+<script>
+/* =========================================================
+   DỰ ÁN — sửa danh sách này để thay bằng dự án thật.
+   video:   đường dẫn file .mp4 (vd "clips/mua-sao-bang.mp4")
+   youtube: mã video YouTube (phần sau "v=" trong link)
+   Để trống cả hai thì hiện khung mẫu.
+   ========================================================= */
+const PROJECTS = [
+  {title:"Mưa Sao Băng", type:"MV", year:2026, hue:255, role:"Compositor", shots:42, tools:"AE · Mocha", dur:"00:03:48:12",
+   desc:"Thay bầu trời đêm, thêm sao băng và ánh sáng tương tác lên ca sĩ.", video:"", youtube:""},
+  {title:"Ngã Ba Đèn Đỏ", type:"Phim ngắn", year:2026, hue:8, role:"Clean-up", shots:18, tools:"Nuke", dur:"00:12:05:00",
+   desc:"Xoá dây cáp, biển hiệu và đoàn làm phim lọt khung trong cảnh đường phố.", video:"", youtube:""},
+  {title:"Hơi Thở Mới", type:"Quảng cáo", year:2025, hue:185, role:"CG Comp", shots:12, tools:"Blender · Nuke", dur:"00:00:30:00",
+   desc:"Ghép chai nước dựng 3D vào cảnh quay thật, khớp phản chiếu và giọt nước.", video:"", youtube:""},
+  {title:"Thành Phố Ngủ Quên", type:"Phim ngắn", year:2025, hue:210, role:"Set extension", shots:27, tools:"Nuke · Blender", dur:"00:18:40:06",
+   desc:"Mở rộng bối cảnh thành phố tương lai từ một góc phố quay thật.", video:"", youtube:""},
+  {title:"Lửa", type:"MV", year:2025, hue:28, role:"FX Artist", shots:9, tools:"AE · Trapcode", dur:"00:04:12:20",
+   desc:"Hiệu ứng lửa và tàn tro bay quanh vũ công, bám theo chuyển động cơ thể.", video:"", youtube:""},
+  {title:"Bài Tập Keying", type:"Cá nhân", year:2024, hue:135, role:"Roto · Key", shots:30, tools:"Nuke · AE", dur:"00:01:30:00",
+   desc:"Loạt shot luyện keying tóc và vật mờ trên phông xanh khó.", video:"", youtube:""}
+];
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function media(p){
+  if (p.youtube) return `<iframe src="https://www.youtube.com/embed/${esc(p.youtube)}" title="${esc(p.title)}" allowfullscreen loading="lazy"></iframe>`;
+  if (p.video) return `<video src="${esc(p.video)}" muted loop playsinline controls preload="metadata"></video>`;
+  return `<span class="thumb-tag">MẪU · CHÈN CLIP</span>`;
+}
+document.getElementById('projectGrid').innerHTML = PROJECTS.map(p => `
+  <article class="card">
+    <div class="thumb${p.video||p.youtube?' has-media':''}" style="--h:${p.hue}">
+      ${media(p)}
+      ${p.video||p.youtube?'':`<span class="thumb-tc">${esc(p.dur)}</span>`}
+    </div>
+    <div>
+      <div class="card-top mono"><span>${esc(p.type).toUpperCase()}</span><span>${p.year}</span></div>
+      <h3>${esc(p.title)}</h3>
+    </div>
+    <p>${esc(p.desc)}</p>
+    <dl class="specs mono">
+      <div><dt>Vai trò</dt><dd>${esc(p.role)}</dd></div>
+      <div><dt>Số shot</dt><dd>${p.shots}</dd></div>
+      <div><dt>Phần mềm</dt><dd>${esc(p.tools)}</dd></div>
+    </dl>
+  </article>`).join('');
+
+/* ---------- helpers ---------- */
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function fit(c){const r=c.getBoundingClientRect(),d=Math.min(window.devicePixelRatio||1,2);c.width=Math.max(1,Math.round(r.width*d));c.height=Math.max(1,Math.round(r.height*d));return d}
+const pad = n => String(n).padStart(2,'0');
+function tc(frames){const f=frames%24,s=Math.floor(frames/24);return `${pad(Math.floor(s/3600))}:${pad(Math.floor(s/60)%60)}:${pad(s%60)}:${pad(f)}`}
+
+/* ---------- hero: camera-track viewer ---------- */
+const trackCv = document.getElementById('trackCv');
+const tcEl = document.getElementById('viewerTc');
+const rnd = mulberry32(11);
+const markers = Array.from({length:9},(_,i)=>({x:-5+rnd()*10, z:3.5+rnd()*12, id:`TRK_${pad(i+1)}`, err:(0.12+rnd()*0.3).toFixed(2)}));
+let dpr = fit(trackCv);
+
+function drawTrack(t){
+  const ctx = trackCv.getContext('2d'), W = trackCv.width, H = trackCv.height, d = dpr;
+  const hor = H*0.44, f = W*0.5, camH = 1.6;
+  const camX = Math.sin(t/7000)*2.4, camZ = Math.sin(t/11000)*1.4;
+  const sky = ctx.createLinearGradient(0,0,0,hor);
+  sky.addColorStop(0,'#0B0E13'); sky.addColorStop(1,'#232A35');
+  ctx.fillStyle = sky; ctx.fillRect(0,0,W,hor);
+  const gr = ctx.createLinearGradient(0,hor,0,H);
+  gr.addColorStop(0,'#1A2029'); gr.addColorStop(1,'#0C0F14');
+  ctx.fillStyle = gr; ctx.fillRect(0,hor,W,H-hor);
+  const P = (x,z) => { const zr = z-camZ; return [W/2+(x-camX)*f/zr, hor+camH*f/zr, zr]; };
+  ctx.lineWidth = 1*d;
+  for (let gz=1; gz<=40; gz++){
+    const zr = gz-camZ; if (zr<0.4) continue;
+    const y = hor+camH*f/zr;
+    ctx.strokeStyle = `rgba(142,151,164,${Math.max(0.03,0.26-zr*0.006)})`;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(142,151,164,0.16)';
+  for (let gx=-24; gx<=24; gx++){
+    const a = P(gx,0.6), b = P(gx,60);
+    ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(242,163,58,0.35)';
+  ctx.beginPath(); ctx.moveTo(0,hor); ctx.lineTo(W,hor); ctx.stroke();
+  ctx.font = `${10*d}px "IBM Plex Mono", ui-monospace, monospace`;
+  ctx.textBaseline = 'middle';
+  for (const m of markers){
+    const [sx,sy,zr] = P(m.x,m.z); if (zr<0.8) continue;
+    const s = Math.min(16*d, Math.max(5*d, f/zr*0.06));
+    ctx.strokeStyle = '#F2A33A'; ctx.lineWidth = 1.5*d;
+    ctx.strokeRect(sx-s, sy-s, s*2, s*2);
+    ctx.beginPath(); ctx.moveTo(sx-s*0.5,sy); ctx.lineTo(sx+s*0.5,sy); ctx.moveTo(sx,sy-s*0.5); ctx.lineTo(sx,sy+s*0.5); ctx.stroke();
+    if (W > 520*d){ ctx.fillStyle = 'rgba(236,233,227,0.75)'; ctx.fillText(`${m.id}  ${m.err}px`, sx+s+6*d, sy); }
+  }
+}
+let start = performance.now();
+function loop(now){
+  const t = now-start;
+  drawTrack(t);
+  tcEl.textContent = tc(Math.floor(t/1000*24));
+  requestAnimationFrame(loop);
+}
+if (reduce){ drawTrack(0); } else { requestAnimationFrame(loop); }
+
+/* ---------- breakdown: before / after ---------- */
+const beforeCv = document.getElementById('beforeCv'), afterCv = document.getElementById('afterCv');
+function person(ctx,W,H,fill){
+  const cx = W*0.5, base = H, head = H*0.06;
+  ctx.fillStyle = fill; ctx.beginPath();
+  ctx.arc(cx, H*0.42, head, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx-head*0.55, H*0.42+head*0.9);
+  ctx.lineTo(cx+head*0.55, H*0.42+head*0.9);
+  ctx.quadraticCurveTo(cx+head*2.6, H*0.42+head*1.4, cx+head*2.7, H*0.42+head*3.2);
+  ctx.lineTo(cx+head*2.9, base); ctx.lineTo(cx-head*2.9, base);
+  ctx.lineTo(cx-head*2.7, H*0.42+head*3.2);
+  ctx.quadraticCurveTo(cx-head*2.6, H*0.42+head*1.4, cx-head*0.55, H*0.42+head*0.9);
+  ctx.closePath(); ctx.fill();
+}
+function drawBefore(){
+  const c = beforeCv, ctx = c.getContext('2d'), W = c.width, H = c.height, d = Math.min(window.devicePixelRatio||1,2);
+  const g = ctx.createRadialGradient(W*0.5,H*0.4,H*0.1,W*0.5,H*0.5,W*0.75);
+  g.addColorStop(0,'#4FC46A'); g.addColorStop(1,'#1F6E33');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(0,H*0.82,W,H*0.18);
+  ctx.strokeStyle = '#F4F4F0'; ctx.lineWidth = 3*d;
+  const r = mulberry32(5);
+  for (let i=0;i<10;i++){
+    const x = W*(0.08+r()*0.84), y = H*(0.08+r()*0.66), s = 9*d;
+    if (Math.abs(x-W*0.5) < W*0.12 && y > H*0.3) continue;
+    ctx.beginPath(); ctx.moveTo(x-s,y-s); ctx.lineTo(x+s,y+s); ctx.moveTo(x+s,y-s); ctx.lineTo(x-s,y+s); ctx.stroke();
+  }
+  ctx.fillStyle = '#2B2F2A'; ctx.fillRect(W*0.86,H*0.18,4*d,H*0.64);
+  ctx.fillRect(W*0.835,H*0.16,W*0.06,6*d);
+  person(ctx,W,H,'#1B1F22');
+}
+function drawAfter(){
+  const c = afterCv, ctx = c.getContext('2d'), W = c.width, H = c.height;
+  const sky = ctx.createLinearGradient(0,0,0,H*0.72);
+  sky.addColorStop(0,'#0E1A33'); sky.addColorStop(0.55,'#4A3A5C'); sky.addColorStop(1,'#E89A4A');
+  ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
+  const sun = ctx.createRadialGradient(W*0.3,H*0.66,0,W*0.3,H*0.66,H*0.35);
+  sun.addColorStop(0,'rgba(255,214,150,.95)'); sun.addColorStop(0.15,'rgba(255,180,90,.6)'); sun.addColorStop(1,'rgba(255,150,60,0)');
+  ctx.fillStyle = sun; ctx.fillRect(0,0,W,H);
+  const r = mulberry32(21);
+  const layers = [['#3A2E45',0.7,0.16],['#241E30',0.74,0.22],['#14121C',0.8,0.3]];
+  for (const [col,base,maxh] of layers){
+    ctx.fillStyle = col; let x = 0;
+    while (x < W){
+      const w = W*(0.02+r()*0.05), h = H*(0.04+r()*maxh);
+      ctx.fillRect(x, H*base-h, w, h+H);
+      if (col === '#14121C'){
+        ctx.fillStyle = 'rgba(255,196,120,.55)';
+        for (let wy = H*base-h+6; wy < H*base-4; wy += 9) for (let wx = x+4; wx < x+w-4; wx += 8) if (r() > 0.72) ctx.fillRect(wx, wy, 2.5, 3);
+        ctx.fillStyle = col;
+      }
+      x += w + W*0.003;
+    }
+  }
+  ctx.fillStyle = '#0B0B10'; ctx.fillRect(0,H*0.8,W,H*0.2);
+  ctx.save(); ctx.shadowColor = 'rgba(255,170,80,.9)'; ctx.shadowBlur = H*0.03;
+  person(ctx,W,H,'#120F14'); ctx.restore();
+  person(ctx,W,H,'#120F14');
+  const img = ctx.getImageData(0,0,W,H), px = img.data, gr = mulberry32(3);
+  for (let i=0;i<px.length;i+=16){ const n = (gr()-0.5)*14; px[i]+=n; px[i+1]+=n; px[i+2]+=n; }
+  ctx.putImageData(img,0,0);
+}
+function drawCompare(){ fit(beforeCv); fit(afterCv); drawBefore(); drawAfter(); }
+drawCompare();
+const compare = document.getElementById('compare'), range = document.getElementById('cmpRange');
+range.addEventListener('input', () => compare.style.setProperty('--pos', range.value + '%'));
+
+let rT;
+addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => { dpr = fit(trackCv); if (reduce) drawTrack(0); drawCompare(); }, 120); });
+
+/* ---------- copy email ---------- */
+const copyBtn = document.getElementById('copyBtn'), mailEl = document.getElementById('mailAddr');
+copyBtn.addEventListener('click', () => {
+  const done = () => { copyBtn.textContent = 'Đã sao chép'; setTimeout(() => copyBtn.textContent = 'Sao chép email', 1800); };
+  const select = () => { const s = getSelection(), rg = document.createRange(); rg.selectNodeContents(mailEl); s.removeAllRanges(); s.addRange(rg); copyBtn.textContent = 'Đã chọn, nhấn Ctrl+C'; };
+  try { navigator.clipboard.writeText(mailEl.textContent.trim()).then(done, select); } catch(e){ select(); }
+});
+</script>
+</body>
+</html>
