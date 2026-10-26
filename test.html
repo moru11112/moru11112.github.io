@@ -64,6 +64,16 @@ button{font:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){.bgfx .glow{animation:none}}
 @media (hover:none){.bgfx .spot{display:none}}
 
+/* background music */
+.music-btn{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:25;display:flex;align-items:center;gap:9px;height:44px;padding:0 16px 0 14px;border-radius:999px;border:1px solid var(--line);background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--fg);cursor:pointer;font-family:var(--f-mono);font-size:12px}
+.music-btn:hover{border-color:var(--accent)}
+.music-btn .bars{display:flex;align-items:flex-end;gap:2.5px;height:14px}
+.music-btn .bars i{width:3px;height:3px;background:var(--accent);border-radius:1px;transition:height .3s ease}
+.music-btn.on .bars i{animation:eq 1s ease-in-out infinite}
+.music-btn.on .bars i:nth-child(2){animation-delay:.2s}.music-btn.on .bars i:nth-child(3){animation-delay:.4s}.music-btn.on .bars i:nth-child(4){animation-delay:.1s}
+@keyframes eq{0%,100%{height:3px}50%{height:14px}}
+@media (prefers-reduced-motion:reduce){.music-btn.on .bars i{animation:none;height:9px}}
+
 /* film grain */
 .grain{position:fixed;inset:-50%;z-index:40;pointer-events:none;opacity:.07;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -292,7 +302,9 @@ footer{text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--mu
   </section>
 </main>
 
-<footer>© 2026 Moru</footer>
+<footer>© 2026 Moru · Nhạc nền: <a href="https://soundcloud.com/lonown6/heaven-subculture-1" target="_blank" rel="noopener">Heaven Subculture – LONOWN</a></footer>
+<button class="music-btn" type="button" id="musicBtn" aria-pressed="false" hidden><span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span id="musicTxt">Nhạc: tắt</span></button>
+
 
 
 
@@ -363,6 +375,7 @@ const $ = id => document.getElementById(id);
 function playIn(box, item){
   const id = ytId(item.youtube);
   if (!id && !item.video) return false;
+  if (typeof music !== "undefined") music.pause();
   box.innerHTML = id
     ? `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1" title="${esc(item.title||'Clip')}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>`
     : `<video src="${esc(item.video)}" controls autoplay playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000"></video>`;
@@ -670,6 +683,44 @@ $('nChar').textContent = pad2(CHARACTERS.length);
 $('nBA').textContent = pad2(BEFORE_AFTER.length);
 $('tools').innerHTML = TOOLS.map(([c,n]) => `<li><b>${esc(c)}</b>${esc(n)}</li>`).join('');
 
+
+/* ---- background music: SoundCloud official player, starts very quietly after the first click ---- */
+const SOUNDCLOUD = "https://soundcloud.com/lonown6/heaven-subculture-1";   // link bài trên SoundCloud
+const MUSIC_CREDIT = "Heaven Subculture · LONOWN";
+const MUSIC_VOLUME = 6;            // 0 → 100 (6 = rất nhỏ)
+const music = (() => {
+  const btn = $('musicBtn'), txt = $('musicTxt');
+  if (!SOUNDCLOUD || !btn) return {pause(){}};
+  const fr = document.createElement('iframe');
+  fr.allow = 'autoplay'; fr.title = 'Nhạc nền'; fr.setAttribute('aria-hidden','true'); fr.tabIndex = -1;
+  fr.style.cssText = 'position:fixed;width:1px;height:1px;left:-9999px;bottom:0;border:0;opacity:0;pointer-events:none';
+  fr.src = 'https://w.soundcloud.com/player/?url=' + encodeURIComponent(SOUNDCLOUD) + '&auto_play=false&visual=false&show_artwork=false&show_comments=false&sharing=false&buying=false&download=false';
+  document.body.appendChild(fr);
+  let w = null, ready = false, playing = false, wantPlay = false;
+  let pref = 'on'; try { pref = localStorage.getItem('moru-music') || 'on'; } catch(e) {}
+  const save = v => { pref = v; try { localStorage.setItem('moru-music', v); } catch(e) {} };
+  const ui = on => { playing = on; btn.classList.toggle('on', on); btn.setAttribute('aria-pressed', on); txt.textContent = on ? MUSIC_CREDIT : 'Nhạc: tắt'; };
+  const play = () => { if (!ready) { wantPlay = true; return; } w.setVolume(MUSIC_VOLUME); w.play(); };
+  const pause = () => { if (ready) w.pause(); ui(false); };
+  const s = document.createElement('script'); s.src = 'https://w.soundcloud.com/player/api.js';
+  s.onload = () => {
+    w = SC.Widget(fr);
+    const E = SC.Widget.Events;
+    w.bind(E.READY, () => { ready = true; btn.hidden = false; w.setVolume(MUSIC_VOLUME); if (wantPlay) play(); });
+    w.bind(E.PLAY, () => { w.setVolume(MUSIC_VOLUME); ui(true); });
+    w.bind(E.PAUSE, () => ui(false));
+    w.bind(E.FINISH, () => { w.seekTo(0); w.play(); });   // loop
+  };
+  document.head.appendChild(s);
+  btn.addEventListener('click', e => { e.stopPropagation(); if (playing) { save('off'); pause(); } else { save('on'); play(); } });
+  const first = e => {
+    if (e.target.closest && e.target.closest('#musicBtn, iframe')) return;
+    removeEventListener('pointerdown', first); removeEventListener('keydown', first);
+    if (pref !== 'off') play();
+  };
+  addEventListener('pointerdown', first); addEventListener('keydown', first);
+  return {pause: () => { if (playing) pause(); }};
+})();
 /* ---- copy email ---- */
 const copyBtn = $('copyBtn'), mailEl = $('mailAddr');
 copyBtn.addEventListener('click', () => {
